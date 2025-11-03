@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E.C.A. - 감정세포 배양 프로토콜</title>
+    
+    <link href="https://cdn.jsdelivr.net/gh/naver/d2codingfont/dist/d2coding.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+
+    <style>
+        :root {
+            --main-bg: #F9F9F9;
+            --page-bg: #FFFFFF;
+            --main-text: #111111;
+            --border-color: #DDDDDD; 
+            --border-focus: #000000; /* 검은색 */
+            --gray-mid: #999;
+            --gray-light: #F0F0F0;
+            --button-hover-bg: #111111;
+            --button-hover-text: #ffffff;
+            font-family: 'D2Coding', monospace;
+            font-size: 14px;
+        }
+
+        :root {
+            --panel-width: 80px;
+            --animation-speed: 0.4s;
+            --border-width: 1.5px; /* 테두리 두께 변수화 */
+        }
+
+        /* [추가] 폰트 스타일 클래스 */
+        .font-thin {
+            font-family: 'D2Coding', monospace;
+            font-weight: normal; /* 400 */
+        }
+        .font-thick {
+            font-family: 'D2Coding', monospace;
+            font-weight: bold; /* 700 */
+        }
+
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            transition: background 0.3s, color 0.3s;
+            background-color: var(--main-bg);
+            color: var(--main-text);
+            margin: 0;
+            overflow: hidden; 
+            height: 100vh;
+        }
+
+        .main-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: none;
+        }
+        
+        .panel {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: var(--panel-width);
+            background-color: var(--page-bg);
+            border: var(--border-width) solid var(--border-focus);
+            border-top: none;
+            border-bottom: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            /* [요청 2: transition에 background-color와 color 추가] */
+            transition: left var(--animation-speed) ease-in-out, 
+                        background-color var(--animation-speed) ease-in-out, 
+                        color var(--animation-speed) ease-in-out;
+            margin-left: 0;
+            color: var(--main-text); /* [요청 2] 기본 색상 지정 */
+        }
+        
+        #panel-result { 
+            left: 0; 
+            margin-left: 0;
+        }
+        #panel-sensitivity { 
+            left: var(--panel-width); 
+            margin-left: calc(var(--border-width) * -1); 
+        }
+        #panel-survey { 
+            left: 0; 
+            margin-left: 0; 
+        } 
+
+        .content-area {
+            position: absolute;
+            top: 0;
+            left: 0; 
+            height: 100%;
+            width: 100vw; 
+            z-index: 10;
+            overflow: hidden;
+            border: none;
+            right: auto;
+            opacity: 1;
+            transition: none;
+        }
+        
+        .content-block {
+            width: 100vw;
+            height: 100%;
+            display: block !important; 
+            background-color: var(--page-bg);
+            border: 1.5px solid var(--border-color); 
+            position: absolute;
+            top: 0;
+            left: 100vw; 
+            transition: left var(--animation-speed) ease-in-out, width var(--animation-speed) ease-in-out;
+        }
+        
+        #content-survey { z-index: 13; }
+        #content-sensitivity { z-index: 14; }
+        #content-result { z-index: 15; }
+
+
+        /* ============================================================
+        [CSS 로직]
+        ============================================================
+        */
+
+        /* State 1: Survey active */
+        body.survey-active #panel-result { left: 0; margin-left: 0; }
+        body.survey-active #panel-sensitivity { left: var(--panel-width); margin-left: calc(var(--border-width) * -1); }
+        body.survey-active #panel-survey { left: calc(100vw - var(--panel-width)); margin-left: 0; }
+        
+        /* [요청 2: 활성 패널 스타일] */
+        body.survey-active #panel-survey {
+            background-color: var(--border-focus);
+            color: var(--page-bg);
+        }
+
+        body.survey-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
+        body.survey-active #content-survey { left: calc(var(--panel-width) * 2); }
+        body.survey-active #content-sensitivity { left: -100vw; }
+        body.survey-active #content-result { left: -100vw; }
+
+        /* State 2: Sensitivity active */
+        body.sensitivity-active #panel-result { left: 0; margin-left: 0; }
+        body.sensitivity-active #panel-sensitivity { left: calc(100vw - var(--panel-width) * 2); margin-left: 0; } 
+        body.sensitivity-active #panel-survey { left: calc(100vw - var(--panel-width)); margin-left: calc(var(--border-width) * -1); } 
+        
+        /* [요청 2: 활성 패널 스타일] */
+        body.sensitivity-active #panel-sensitivity {
+            background-color: var(--border-focus);
+            color: var(--page-bg);
+        }
+
+        body.sensitivity-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
+        body.sensitivity-active #content-survey { left: calc(var(--panel-width) * 2); } 
+        body.sensitivity-active #content-sensitivity { left: var(--panel-width); }
+        body.sensitivity-active #content-result { left: -100vw; }
+
+        /* State 3: Result active */
+        body.result-active #panel-result { left: calc(100vw - var(--panel-width) * 3); margin-left: 0; } 
+        body.result-active #panel-sensitivity { left: calc(100vw - var(--panel-width) * 2); margin-left: calc(var(--border-width) * -1); } 
+        body.result-active #panel-survey { left: calc(100vw - var(--panel-width)); margin-left: calc(var(--border-width) * -1); } 
+        
+        /* [요청 2: 활성 패널 스타일] */
+        body.result-active #panel-result {
+            background-color: var(--border-focus);
+            color: var(--page-bg);
+        }
+
+        body.result-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
+        body.result-active #content-survey { left: calc(var(--panel-width) * 2); }
+        body.result-active #content-sensitivity { left: var(--panel-width); }
+        body.result-active #content-result { left: 0; }
+        /* ==================== CSS 끝 ==================== */
+
+        
+        .panel-content-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* 메인 텍스트(#, Title)를 중앙 정렬 */
+            height: 100%;
+            width: 100%;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            position: relative; /* 상단 타이틀의 기준점 */
+            overflow: hidden; 
+            color: inherit; /* [요청 2] .panel의 color를 상속받음 */
+        }
+
+        .panel-archive-title {
+            position: absolute;
+            /* [요청 1: 시각적 상단(CSS bottom)으로 이동] */
+            bottom: 25px; 
+            left: 50%;
+            transform: translateX(-50%); 
+
+            font-size: 0.8em; 
+            line-height: 1.4;
+            text-align: center;
+            opacity: 0.7;
+        }
+        .panel-archive-title span {
+            display: block; 
+        }
+        
+        .panel-number {
+            margin: 0;
+            font-size: 1.2em; 
+        }
+
+        .panel-main-title {
+            margin: 0;
+            margin-top: 8px; /* 넘버와 간격 */
+            font-size: 1.5em;
+            letter-spacing: 2px; 
+        }
+
+
+        .fullscreen-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .page-container {
+            text-align: center; width: 100%;
+            border: 1.5px solid var(--border-color);
+            padding: 30px 40px 40px; position: relative;
+            background-color: var(--page-bg);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            z-index: 5; 
+        }
+
+        #step1-access .page-container { max-width: 480px;  } 
+        .container-header {
+            display: flex; justify-content: space-between; padding-bottom: 10px;
+            margin-bottom: 25px; border-bottom: 1.5px solid var(--border-color);
+            font-size: 0.9rem; opacity: 0.6;
+        }
+        #main-logo {
+            font-size: 2rem; letter-spacing: 0.5em; margin-bottom: 25px;
+            animation: flicker 1.5s infinite alternate;
+        }
+        @keyframes flicker {
+            0%, 100% { opacity: 1; text-shadow: 0 0 2px currentColor; } 
+            50% { opacity: 0.7; text-shadow: none; }
+        }
+        #terminal-output {
+            height: 100px; padding: 10px; font-size: 0.95rem; text-align: left;
+            margin-bottom: 20px; white-space: pre-wrap; background-color: var(--gray-light);
+            border-bottom: 1.5px solid var(--border-color);
+        }
+        .input-line {
+            display: flex; align-items: center; padding: 12px 0px;
+            border-bottom: 1.5px solid var(--border-color);
+        }
+        .input-line:focus-within { border-color: var(--border-focus); }
+        .input-line label { margin-right: 8px; font-weight: bold; font-size: 1rem; }
+        #guest-id { background: none; border: none; outline: none; color: inherit; flex: 1; font-size: 1rem; }
+        button {
+            font-family: inherit; background: none; border: 1px solid currentColor;
+            color: inherit; padding: 12px 20px; width: 100%; margin-top: 20px;
+            cursor: pointer; transition: all 0.2s ease; border-radius: 4px;
+        }
+        button:hover { background: var(--button-hover-bg); color: var(--button-hover-text); }
+
+        #step2-protocol, #step3-culturing { align-items: stretch; justify-content: center; gap: 20px; }
+        .protocol-page { max-width: 650px; padding: 30px 40px 40px; flex: 1; }
+        .visualization-container {
+            width: 280px; flex-shrink: 0; border: 1.5px solid var(--border-color);
+            background-color: var(--page-bg); box-shadow: 0 4px 12px rgba(0,0,0,0.05); padding: 20px 30px;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: flex-start; position: relative; overflow: hidden; 
+        }
+        .viz-header {
+            width: 100%; padding-bottom: 10px; margin-bottom: 20px;
+            border-bottom: 1.5px solid var(--border-color); font-size: 0.9rem;
+            opacity: 0.6; text-align: center;
+        }
+        #progress-bar-container { width: 100%; height: 8px; background: rgba(0,0,0,0.1); margin-bottom: 30px; border-radius: 4px; overflow: hidden; }
+        #progress-indicator { width: 0%; height: 100%; background: currentColor; transition: width 0.4s ease; }
+        .question-step { display: none; animation: fade-in 0.4s ease; text-align: left; }
+        @keyframes fade-in { from {opacity: 0;} to {opacity: 1;} }
+        .main-question { font-size: 1.4rem; margin-bottom: 10px; font-weight: bold; }
+        .sub-text { opacity: 0.6; margin-bottom: 25px; font-size: 0.95rem; }
+        .choice-button {
+            display: block; width: 100%; padding: 12px 18px; border: 1.5px solid var(--border-color);
+            background: var(--page-bg); text-align: left; font-size: 1.05rem; margin-bottom: 10px;
+            transition: 0.2s; border-radius: 4px;
+        }
+        .choice-button:hover { background: var(--button-hover-bg); color: var(--button-hover-text); border-color: var(--button-hover-bg); }
+        .choices.button-choices-scale { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 20px; }
+        .choices.button-choices-scale .choice-button { width: 18%; padding: 10px 8px; text-align: center; font-size: 0.9rem; margin-bottom: 0; }
+
+        .culturing-page { max-width: 650px; }
+        #step3-title { font-size: 1.8rem; text-align: center; margin-bottom: 20px; }
+        .slider-wrapper { display: flex; align-items: center; justify-content: center; width: 100%; margin: 40px 0; }
+        .slider-label { font-size: 0.9rem; opacity: 0.7; margin: 0 15px; }
+        #sensitivity-slider { flex: 1; -webkit-appearance: none; appearance: none; width: 100%; height: 8px; background: var(--gray-light); border: 1px solid var(--main-text); outline: none; cursor: pointer; }
+        #sensitivity-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; background: var(--main-text); cursor: pointer; }
+        #inject-button { position: relative; overflow: hidden; }
+        #inject-progress-fill { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background-color: var(--button-hover-bg); transition: width 0.05s linear; z-index: 1; }
+        #inject-text { position: relative; z-index: 2; }
+        #inject-button.injecting #inject-text { color: var(--button-hover-text); }
+
+        #step4-result { height: 100%; overflow-y: auto; position: relative; } 
+        .result-page { 
+            max-width: 900px; text-align: left; padding: 25px 30px 30px; 
+            position: relative; overflow: visible; 
+        }
+        .result-title { font-size: 1.6rem; letter-spacing: 0.05em; margin-bottom: 20px; font-weight: bold; text-align: center; }
+        .result-wrapper { display: flex; gap: 20px; align-items: stretch; }
+        .result-panel { flex: 1; border: 1.5px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05); padding: 25px; display: flex; flex-direction: column; }
+        .chart-container { width: 100%; flex: 1; min-height: 250px; }
+        #result-cell-info {
+            width: 100%; text-align: left; padding: 15px; background-color: var(--gray-light);
+            border: 1.5px solid var(--border-color); line-height: 1.5; font-size: 0.95rem;
+        }
+        #result-cell-info p { margin: 5px 0; }
+        #result-cell-info strong { color: var(--border-focus); }
+        .final-message { opacity: 0.7; font-size: 0.9rem; margin-top: 15px; text-align: center; }
+        #restart-button { margin-top: 20px; padding: 10px 20px; }
+
+        @media (max-width: 1100px) { 
+            .result-wrapper { flex-direction: column; }
+            body.survey-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
+            body.sensitivity-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
+            body.result-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
+        }
+        @media (max-width: 768px) {
+            #step2-protocol, #step3-culturing { flex-direction: column; }
+            .visualization-container { width: 100%; max-width: 300px; height: auto; }
+            .choices.button-choices-scale { flex-direction: column; }
+            .choices.button-choices-scale .choice-button { width: 100%; margin-bottom: 10px; }
+            
+             :root {
+                --panel-width: 60px; 
+            }
+            .panel h3 { font-size: 1.2em; }
+            body.survey-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
+            body.sensitivity-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
+            body.result-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
+        }
+    </style>
+</head>
+<body> 
+    
+    <section id="step1-access" class="fullscreen-container">
+        <div class="page-container">
+            <div class="container-header"><span>[ FILE: ECA_ACCESS.LOG ]</span></div>
+            <h1 id="main-logo">E . C . A  .</h1>
+            <div id="terminal-output"></div>
+            <div class="input-line">
+                <label for="guest-id">ACCESS ID :</label>
+                <input type="text" id="guest-id" autocomplete="off" maxlength="20">
+            </div>
+            <button id="access-button">[ 접속 (ENTER) ]</button>
+        </div>
+    </section>
+
+    <div class="main-container">
+        <div class="panel" id="panel-survey" data-target="content-survey">
+            <div class="panel-content-wrapper">
+                <div class="panel-archive-title font-thin">
+                    <span>EMOTION</span>
+                    <span>CELL</span>
+                    <span>ARCHIVE</span>
+                </div>
+                <h3 class="panel-number font-thick">#001</h3>
+                <h2 class="panel-main-title font-thick">MOTIF CELL CULTURING</h2>
+            </div>
+        </div>
+        <div class="panel" id="panel-sensitivity" data-target="content-sensitivity">
+            <div class="panel-content-wrapper">
+                <div class="panel-archive-title font-thin">
+                    <span>EMOTION</span>
+                    <span>CELL</span>
+                    <span>ARCHIVE</span>
+                </div>
+                <h3 class="panel-number font-thick">#002</h3>
+                <h2 class="panel-main-title font-thick">SENSITIVITY</h2>
+            </div>
+        </div>
+        <div class="panel" id="panel-result" data-target="content-result">
+            <div class="panel-content-wrapper">
+                <div class="panel-archive-title font-thin">
+                    <span>EMOTION</span>
+                    <span>CELL</span>
+                    <span>ARCHIVE</span>
+                </div>
+                <h3 class="panel-number font-thick">#003</h3>
+                <h2 class="panel-main-title font-thick">RESULT</h2>
+            </div>
+        </div>
+        
+        <div class="content-area">
+            <div class="content-block" id="content-survey">
+                <section id="step2-protocol" class="fullscreen-container"></section>
+            </div>
+            <div class="content-block" id="content-sensitivity">
+                <section id="step3-culturing" class="fullscreen-container"></section>
+            </div>
+            <div class="content-block" id="content-result">
+                <section id="step4-result" class="fullscreen-container"></section>
+            </div>
+        </div>
+    </div>
+
+<script>
+// --- (JavaScript의 다른 부분은 변경사항이 없습니다) ---
+// --- 전역 변수 ---
+let userAnswers = {}, resultChart = null, activeSketch = null, activePanelId = null;
+let currentQuestion = 1, totalQuestions = 6;
+let visualizationState = 0;
+let finalNucleusColor = [128, 128, 128], finalCellBodyColor = [30, 30, 30]; 
+let finalInstability = 15, noiseOffset = 0, nucleusNoiseOffset = 500;
+let userScores = {}, culturedCell = null;
+
+// --- DOM 요소 ---
+const body = document.body;
+const step1 = document.getElementById('step1-access');
+const mainContainer = document.querySelector('.main-container');
+const panels = document.querySelectorAll('.panel');
+const contentBlocks = document.querySelectorAll('.content-block');
+const accessButton = document.getElementById('access-button'), guestInput = document.getElementById('guest-id'), terminalOutput = document.getElementById('terminal-output');
+const restartButton = document.getElementById('restart-button'); 
+
+const EMOTION_DATABASE = [ { name: '기쁨', vitality: 8, empathy: 7, self_assurance: 8, relationship_stability: 8, emotion_control: 7, life_meaning: 9 }, { name: '희열', vitality: 10, empathy: 8, self_assurance: 9, relationship_stability: 9, emotion_control: 8, life_meaning: 10 }, { name: '만족', vitality: 6, empathy: 7, self_assurance: 8, relationship_stability: 7, emotion_control: 8, life_meaning: 8 }, { name: '자부심', vitality: 7, empathy: 6, self_assurance: 10, relationship_stability: 7, emotion_control: 8, life_meaning: 9 }, { name: '안도', vitality: 5, empathy: 7, self_assurance: 7, relationship_stability: 8, emotion_control: 9, life_meaning: 7 }, { name: '기대', vitality: 7, empathy: 6, self_assurance: 7, relationship_stability: 6, emotion_control: 6, life_meaning: 8 }, { name: '흐뭇함', vitality: 6, empathy: 8, self_assurance: 7, relationship_stability: 9, emotion_control: 8, life_meaning: 8 }, { name: '애정', vitality: 7, empathy: 9, self_assurance: 7, relationship_stability: 10, emotion_control: 8, life_meaning: 8 }, { name: '공감', vitality: 6, empathy: 10, self_assurance: 6, relationship_stability: 8, emotion_control: 7, life_meaning: 7 }, { name: '활기', vitality: 9, empathy: 6, self_assurance: 7, relationship_stability: 6, emotion_control: 7, life_meaning: 7 }, { name: '들뜸', vitality: 10, empathy: 6, self_assurance: 6, relationship_stability: 7, emotion_control: 5, life_meaning: 7 }, { name: '슬픔', vitality: 3, empathy: 7, self_assurance: 4, relationship_stability: 5, emotion_control: 3, life_meaning: 3 }, { name: '허무', vitality: 2, empathy: 4, self_assurance: 3, relationship_stability: 3, emotion_control: 2, life_meaning: 1 }, { name: '서운', vitality: 4, empathy: 6, self_assurance: 4, relationship_stability: 3, emotion_control: 4, life_meaning: 4 }, { name: '자책', vitality: 3, empathy: 5, self_assurance: 1, relationship_stability: 4, emotion_control: 4, life_meaning: 2 }, { name: '외로움', vitality: 3, empathy: 5, self_assurance: 4, relationship_stability: 2, emotion_control: 3, life_meaning: 3 }, { name: '억울', vitality: 5, empathy: 4, self_assurance: 3, relationship_stability: 2, emotion_control: 2, life_meaning: 3 }, { name: '분개', vitality: 8, empathy: 2, self_assurance: 4, relationship_stability: 1, emotion_control: 1, life_meaning: 2 }, { name: '질투', vitality: 6, empathy: 3, self_assurance: 2, relationship_stability: 1, emotion_control: 2, life_meaning: 3 }, { name: '무시', vitality: 4, empathy: 1, self_assurance: 3, relationship_stability: 1, emotion_control: 3, life_meaning: 2 },  { name: '답답', vitality: 4, empathy: 5, self_assurance: 4, relationship_stability: 4, emotion_control: 3, life_meaning: 3 }, { name: '조급', vitality: 7, empathy: 4, self_assurance: 5, relationship_stability: 5, emotion_control: 1, life_meaning: 4 }, { name: '불신', vitality: 5, empathy: 3, self_assurance: 4, relationship_stability: 1, emotion_control: 4, life_meaning: 3 }, { name: '위축', vitality: 2, empathy: 5, self_assurance: 2, relationship_stability: 3, emotion_control: 2, life_meaning: 2 }, { name: '죄책감', vitality: 3, empathy: 6, self_assurance: 1, relationship_stability: 4, emotion_control: 4, life_meaning: 2 }, { name: '배신', vitality: 6, empathy: 2, self_assurance: 3, relationship_stability: 1, emotion_control: 2, life_meaning: 2 },  { name: '무기력', vitality: 1, empathy: 3, self_assurance: 2, relationship_stability: 3, emotion_control: 2, life_meaning: 1 }, { name: '공허', vitality: 2, empathy: 3, self_assurance: 3, relationship_stability: 2, emotion_control: 2, life_meaning: 1 }, { name: '냉소', vitality: 5, empathy: 2, self_assurance: 5, relationship_stability: 3, emotion_control: 6, life_meaning: 2 }, { name: '긴장', vitality: 7, empathy: 5, self_assurance: 5, relationship_stability: 4, emotion_control: 3, life_meaning: 4 } ];
+
+// --- HTML 템플릿 ---
+const surveyHTML = `
+    <div class="visualization-container" id="survey-viz-container">
+        <div class="viz-header">[ LIVE CELL VISUALIZER ]</div>
+    </div>
+    <div class="page-container protocol-page"> 
+        <div class="container-header">
+            <span>[ FILE: GUEST_ANALYSIS.LOG ]</span>
+            <span id="progress-text"></span> 
+        </div>
+        <div id="progress-bar-container"><div id="progress-indicator"></div></div>
+        <form id="protocol-form">
+            <div class="question-step" id="q1"> <h2 class="main-question">"요즘 나는 무언가를 시작할 힘이 난다."</h2> <p class="sub-text">// 현재 '활기'의 정도를 측정합니다. (활기 ↔ 무기력)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q1_vitality" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q1_vitality" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q1_vitality" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q1_vitality" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q1_vitality" data-value="5">매우 그렇다</button> </div> </div> <div class="question-step" id="q2"> <h2 class="main-question">"타인의 감정이나 생각에 쉽게 공감한다."</h2> <p class="sub-text">// 현재 '공감'의 정도를 측정합니다. (공감 ↔ 무시)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q2_empathy" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q2_empathy" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q2_empathy" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q2_empathy" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q2_empathy" data-value="5">매우 그렇다</button> </div> </div> <div class="question-step" id="q3"> <h2 class="main-question">"나는 내 선택과 행동에 만족한다."</h2> <p class="sub-text">// 현재 '자기 확신'의 정도를 측정합니다. (자부심 ↔ 자책)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q3_self_assurance" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q3_self_assurance" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q3_self_assurance" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q3_self_assurance" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q3_self_assurance" data-value="5">매우 그렇다</button> </div> </div> <div class="question-step" id="q4"> <h2 class="main-question">"사람들과의 관계가 나를 편안하게 만든다."</h2> <p class="sub-text">// 현재 '관계 안정'의 정도를 측정합니다. (애정/안도 ↔ 배신/불신)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q4_relationship_stability" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q4_relationship_stability" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q4_relationship_stability" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q4_relationship_stability" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q4_relationship_stability" data-value="5">매우 그렇다</button> </div> </div> <div class="question-step" id="q5"> <h2 class="main-question">"감정이 쉽게 요동치지 않고, 스스로 조절할 수 있다."</h2> <p class="sub-text">// 현재 '감정 통제'의 정도를 측정합니다. (안도 ↔ 조급/긴장)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q5_emotion_control" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q5_emotion_control" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q5_emotion_control" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q5_emotion_control" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q5_emotion_control" data-value="5">매우 그렇다</button> </div> </div> <div class="question-step" id="q6"> <h2 class="main-question">"요즘 내 삶이 의미 있고 가치 있다고 느낀다."</h2> <p class="sub-text">// 현재 '삶의 의미감'의 정도를 측정합니다. (희열/기대 ↔ 허무/공허/냉소)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q6_life_meaning" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q6_life_meaning" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q6_life_meaning" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q6_life_meaning" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q6_life_meaning" data-value="5">매우 그렇다</button> </div> </div>
+        </form>
+    </div>
+`;
+const sensitivityHTML = `
+    <div class="visualization-container" id="sensitivity-viz-container">
+        <div class="viz-header">[ SENSITIVITY CALIBRATION ]</div>
+    </div>
+    <div class="page-container protocol-page culturing-page">
+        <div class="container-header"><span>[ FILE: CELL_SENSITIVITY.LOG ]</span></div>
+        <h2 id="step3-title">[ 민감도 설정 ]</h2>
+        <p class="sub-text" style="text-align: center;">// 세포의 최종 반응성을 조절합니다. 외부 자극에 대한 불안정성을 결정합니다.</p>
+        <div class="slider-wrapper">
+            <span class="slider-label">둔감</span>
+            <input type="range" id="sensitivity-slider" min="0" max="100" value="50">
+            <span class="slider-label">민감</span>
+        </div>
+        <button id="inject-button">
+            <div id="inject-progress-fill"></div>
+            <span id="inject-text">[ 주입 ]</span>
+        </button>
+    </div>
+`;
+const resultHTML = `
+    <div class="page-container result-page" id="result-page-container"> 
+        <div class="container-header">
+            <span>[ FILE: ECA_CELL_CULTURE.LOG ]</span>
+            <span id="result-id-display"></span>
+        </div>
+        <h2 class="result-title">감정세포 배양 완료</h2>
+        <div class="result-wrapper">
+            <div class="result-panel" id="result-left-panel">
+                <div class="chart-container"><canvas id="result-chart"></canvas></div>
+                <div id="result-cell-info"></div>
+            </div>
+        </div>
+        <p class="final-message">// 이 감정세포는 당신의 현재 심리 상태를 반영합니다.</p>
+        <button id="restart-button">[ 다시 측정하기 ]</button>
+    </div>
+`;
+
+// --- 초기화 함수 ---
+function initContent() {
+    document.getElementById('step2-protocol').innerHTML = surveyHTML;
+    document.getElementById('step3-culturing').innerHTML = sensitivityHTML;
+    document.getElementById('step4-result').innerHTML = resultHTML;
+}
+initContent();
+
+// --- 동적으로 생성된 DOM 요소 다시 찾기 ---
+let progressBar, choiceButtons, progressText, sensitivitySlider, injectButton, injectProgressFill, injectText, resultIdDisplay, resultCellInfo, chartCanvas;
+function rebindDOM() {
+    progressBar = document.getElementById('progress-indicator');
+    choiceButtons = document.querySelectorAll('.choice-button');
+    progressText = document.getElementById('progress-text');
+    sensitivitySlider = document.getElementById('sensitivity-slider');
+    injectButton = document.getElementById('inject-button');
+    injectProgressFill = document.getElementById('inject-progress-fill');
+    injectText = document.getElementById('inject-text');
+    resultIdDisplay = document.getElementById('result-id-display');
+    resultCellInfo = document.getElementById('result-cell-info');
+    chartCanvas = document.getElementById('result-chart');
+    
+    choiceButtons.forEach(button => {
+        button.addEventListener('click', (e) => nextStep(e.currentTarget.dataset.question, e.currentTarget.dataset.value));
+    });
+    injectButton.addEventListener('click', handleInjection);
+    document.getElementById('restart-button').addEventListener('click', () => location.reload());
+}
+
+// --- 로직 함수 ---
+function typeEffect(element, text, delay, callback) { let i = 0; element.innerHTML = ""; function typing() { if (i < text.length) { element.innerHTML += text.charAt(i); i++; setTimeout(typing, delay); } else if (callback) { callback(); } } typing(); }
+
+function handleAccess() {
+    const guestID = guestInput.value;
+    if (guestID && /^[a-zA-Z]+$/.test(guestID)) {
+        userAnswers['accessID'] = guestID.toUpperCase(); 
+        accessButton.disabled = true;
+        typeEffect(terminalOutput, "ACCESSING E.C.A. ARCHIVE...", 50, () => {
+            setTimeout(() => {
+                typeEffect(terminalOutput, `ACCESSING E.C.A. ARCHIVE...\nIDENTITY VERIFIED: ${userAnswers['accessID']}\n\n[ 감정세포 배양 프로토콜을 시작합니다. ]`, 50, () => {
+                    setTimeout(() => { 
+                        step1.style.display = 'none'; 
+                        mainContainer.style.display = 'flex';
+                        activatePanel(document.getElementById('panel-survey'));
+                    }, 1000);
+                });
+            }, 800);
+        });
+    } else { typeEffect(terminalOutput, "ERROR: ACCESS ID는 영문으로만 입력해야 합니다.", 50, null); }
+}
+
+function showQuestion(qNum) {
+    document.querySelectorAll('.question-step').forEach(q => q.style.display = 'none');
+    const qEl = document.getElementById('q' + qNum);
+    if (qEl) qEl.style.display = 'block';
+    if(progressBar) progressBar.style.width = (qNum / totalQuestions) * 100 + '%';
+    if(progressText) progressText.textContent = `[ ${qNum} / ${totalQuestions} ]`;
+}
+
+function nextStep(questionName, value) {
+    userAnswers[questionName] = parseInt(value);
+    visualizationState = Object.keys(userAnswers).length - 1;
+    currentQuestion++;
+    if (currentQuestion > totalQuestions) { 
+        setTimeout(() => activatePanel(document.getElementById('panel-sensitivity')), 300);
+    } else { 
+        showQuestion(currentQuestion); 
+    }
+}
+
+function handleInjection() {
+    sensitivitySlider.disabled = true; injectButton.disabled = true; injectButton.classList.add('injecting');
+    finalInstability = 5 + (sensitivitySlider.value / 100) * 30;
+    if(activeSketch) activeSketch.noLoop();
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+        progress += 5;
+        if (progress >= 100) {
+            progress = 100; clearInterval(progressInterval);
+            injectText.textContent = "[ 주입 완료 ]"; injectProgressFill.style.width = '100%';
+            setTimeout(() => { 
+                calculateAndShowFinalResult();
+                activatePanel(document.getElementById('panel-result'));
+            }, 500);
+        }
+        injectProgressFill.style.width = progress + '%'; injectText.textContent = `[ 주입 중... ${progress}% ]`;
+    }, 50);
+}
+
+function calculateAndShowFinalResult() {
+    userScores = {
+        vitality: (userAnswers['q1_vitality'] - 1) * 2.25 + 1, empathy: (userAnswers['q2_empathy'] - 1) * 2.25 + 1,
+        self_assurance: (userAnswers['q3_self_assurance'] - 1) * 2.25 + 1, relationship_stability: (userAnswers['q4_relationship_stability'] - 1) * 2.25 + 1,
+        emotion_control: (userAnswers['q5_emotion_control'] - 1) * 2.25 + 1, life_meaning: (userAnswers['q6_life_meaning'] - 1) * 2.25 + 1
+    };
+    culturedCell = findClosestEmotion(userScores);
+}
+
+function findClosestEmotion(scores) {
+    let closestDist = Infinity, closestEmotion = null;
+    EMOTION_DATABASE.forEach(emotion => {
+        const dist = Math.sqrt(Object.keys(scores).reduce((sum, key) => sum + Math.pow(scores[key] - emotion[key], 2), 0));
+        if (dist < closestDist) { closestDist = dist; closestEmotion = emotion; }
+    });
+    return closestEmotion;
+}
+
+function showResult(cell, scores) {
+    if(!resultIdDisplay) return;
+    resultIdDisplay.textContent = `[ ID: ${userAnswers['accessID']} ]`;
+    resultCellInfo.innerHTML = `
+        <p><strong>배양된 감정세포:</strong> <span style="font-size: 1.2em; font-weight: bold;">${cell.name}</span></p>
+        <p><strong>[ 분석 데이터 (10점 만점) ]</strong></p>
+        <p><strong>활력:</strong> ${scores.vitality.toFixed(1)} &nbsp; <strong>공감:</strong> ${scores.empathy.toFixed(1)}</p>
+        <p><strong>자기 확신:</strong> ${scores.self_assurance.toFixed(1)} &nbsp; <strong>관계 안정:</strong> ${scores.relationship_stability.toFixed(1)}</p>
+        <p><strong>감정 통제:</strong> ${scores.emotion_control.toFixed(1)} &nbsp; <strong>삶의 의미감:</strong> ${scores.life_meaning.toFixed(1)}</p>`;
+    if (resultChart) resultChart.destroy();
+    resultChart = new Chart(chartCanvas, {
+        type: 'radar',
+        data: {
+            labels: ['활력', '공감', '자기 확신', '관계 안정', '감정 통제', '삶의 의미감'],
+            datasets: [{
+                label: `[ ${userAnswers['accessID']} ]`, data: Object.values(scores).map(s => parseFloat(s.toFixed(1))),
+                fill: true, backgroundColor: 'rgba(0, 0, 0, 0.05)', borderColor: 'rgba(0, 0, 0, 1)', pointBackgroundColor: 'rgba(0, 0, 0, 1)'
+            }, {
+                label: `'${cell.name}'`, data: Object.values(cell).slice(1),
+                fill: false, borderColor: 'rgba(150, 150, 150, 0.5)', pointBackgroundColor: 'rgba(150, 150, 150, 0.5)'
+            }]
+        },
+        options: { maintainAspectRatio: false, scales: { r: { suggestedMin: 0, suggestedMax: 10, ticks: { stepSize: 2, backdropColor: 'var(--page-bg)', color: 'var(--gray-mid)', font: { family: 'D2Coding' }}, pointLabels: { font: { family: 'D2Coding' }, color: 'var(--main-text)' }}}, plugins: { legend: { labels: { font: { family: 'D2Coding' }}}}}
+    });
+}
+
+function activatePanel(panel) {
+    if (activeSketch) { activeSketch.remove(); activeSketch = null; }
+
+    const panelId = panel.id.split('-')[1];
+    
+    body.className = `${panelId}-active`;
+    activePanelId = panel.id;
+    
+    contentBlocks.forEach(cb => cb.classList.remove('active'));
+    const targetContent = document.getElementById(`content-${panelId}`);
+    if(targetContent) targetContent.classList.add('active');
+    
+    if (panelId === 'survey') {
+        // [수정] 스케치(애니메이션)를 항상 (재)생성합니다.
+        initStep2Sketch(); 
+        if (currentQuestion <= totalQuestions) { 
+            // 설문이 끝나지 않았을 때만 질문을 표시합니다.
+            showQuestion(currentQuestion);
+        }
+    } else if (panelId === 'sensitivity') {
+        initStep3Sketch();
+    } else if (panelId === 'result') {
+        if(culturedCell && userScores) {
+             showResult(culturedCell, userScores);
+             initStep4Sketch(); 
+        }
+    }
+}
+
+accessButton.addEventListener('click', handleAccess);
+guestInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleAccess());
+panels.forEach(panel => {
+    panel.addEventListener('click', () => {
+        if (panel.id === 'panel-sensitivity' && currentQuestion <= totalQuestions) return;
+        if (panel.id === 'panel-result' && (!culturedCell || !userScores)) return;
+        if (panel.id !== activePanelId) activatePanel(panel);
+    });
+});
+
+function drawCellHelper(p, radius, instability, bodyColor, nucleusColor) {
+    p.noStroke(); p.fill(bodyColor[0], bodyColor[1], bodyColor[2]); p.push(); p.translate(p.width / 2, p.height / 2);
+    p.beginShape();
+    for (let a = 0; a < p.TWO_PI; a += 0.1) { let r = radius + p.map(p.noise(a * 1.5, noiseOffset), 0, 1, -instability, instability); p.vertex(r * p.cos(a), r * p.sin(a)); }
+    p.endShape(p.CLOSE);
+    if (nucleusColor) {
+        p.fill(nucleusColor[0], nucleusColor[1], nucleusColor[2]); p.beginShape();
+        for (let a = 0; a < p.TWO_PI; a += 0.2) { let r = radius * 0.6 + p.map(p.noise(a, nucleusNoiseOffset), 0, 1, -instability * 0.5, instability * 0.5); p.vertex(r * p.cos(a), r * p.sin(a)); }
+        p.endShape(p.CLOSE);
+    }
+    p.pop(); noiseOffset += 0.02; nucleusNoiseOffset += 0.01; 
+}
+
+function initStep2Sketch() {
+    let particles = [], mergeRadius = 0;
+    let pos, vel, parentContainer;
+    const canvasSize = 200;
+
+    const sketch = p => {
+        class Particle {
+            constructor() { this.displayPos = p.createVector(p.random(p.width), p.random(p.height)); this.merged = false; }
+            update(target) { let v = p5.Vector.sub(target, this.displayPos); if (v.mag() < 5) { this.merged = true; } v.setMag(p.max(v.mag() * 0.1, 3)); this.displayPos.add(v); }
+            display() { p.noStroke(); p.fill(30, 150); p.circle(this.displayPos.x, this.displayPos.y, 15); }
+        }
+        p.setup = () => {
+            parentContainer = document.getElementById('survey-viz-container');
+            let c = p.createCanvas(canvasSize, canvasSize).parent(parentContainer);
+            c.style('position', 'absolute');
+            pos = p.createVector(parentContainer.offsetWidth / 2 - p.width / 2, parentContainer.offsetHeight / 2 - p.height / 2);
+            vel = p5.Vector.random2D().mult(1.6);
+        };
+        p.draw = () => {
+            p.clear();
+            const center = p.createVector(p.width / 2, p.height / 2);
+            let currentInstability = 10, body = finalCellBodyColor, nucleus = null;
+            if (visualizationState === 0) {} 
+            else if (visualizationState === 1) {
+                if (particles.length === 0) { for(let i=0; i<15; i++) particles.push(new Particle()); }
+                particles.forEach(pt => pt.display()); 
+            } else {
+                particles.forEach(pt => { if (!pt.merged) { pt.update(center); pt.display(); } });
+                if (mergeRadius < p.width * 0.4) mergeRadius += 2;
+                if(visualizationState >= 3){ currentInstability = 10+(5-userAnswers['q3_self_assurance'])*3; nucleus = finalNucleusColor; }
+                if(visualizationState >= 4 && finalNucleusColor[0] === 128){ let h = (userAnswers['q4_relationship_stability']-1)*60; p.colorMode(p.HSB); finalNucleusColor = p.color(h, 60, 90).levels.slice(0,3); p.colorMode(p.RGB); }
+                if(visualizationState >= 5 && finalCellBodyColor[0] === 30){ p.colorMode(p.HSB); let h = p.hue(p.color(finalNucleusColor)); let s = 20+(userAnswers['q5_emotion_control']-1)*15; finalCellBodyColor = p.color(h, s, 100).levels.slice(0,3); p.colorMode(p.RGB); }
+                if(visualizationState >= 6) currentInstability = 5+(10-userAnswers['q5_emotion_control']*2)*1.5;
+                drawCellHelper(p, mergeRadius, currentInstability, body, nucleus);
+            }
+            if (visualizationState >= 2) {
+                pos.add(vel);
+                if (pos.x <= 0 || pos.x + p.width >= parentContainer.offsetWidth) { vel.x *= -1; }
+                if (pos.y <= 0 || pos.y + p.height >= parentContainer.offsetHeight) { vel.y *= -1; }
+                pos.x = p.constrain(pos.x, 0, parentContainer.offsetWidth - p.width);
+                pos.y = p.constrain(pos.y, 0, parentContainer.offsetHeight - p.height);
+                p.canvas.style.left = `${pos.x}px`;
+                p.canvas.style.top = `${pos.y}px`;
+            } else { 
+                 p.canvas.style.left = `${parentContainer.offsetWidth / 2 - p.width / 2}px`;
+                 p.canvas.style.top = `${parentContainer.offsetHeight / 2 - p.height / 2}px`;
+            }
+        };
+    };
+    activeSketch = new p5(sketch);
+}
+
+function initStep3Sketch() {
+    let pos, vel, parentContainer;
+    const canvasSize = 200;
+    const sketch = p => {
+        p.setup = () => {
+            parentContainer = document.getElementById('sensitivity-viz-container');
+            let c = p.createCanvas(canvasSize, canvasSize).parent(parentContainer);
+            c.style('position', 'absolute');
+            pos = p.createVector(parentContainer.offsetWidth / 2 - p.width / 2, parentContainer.offsetHeight / 2 - p.height / 2);
+            vel = p5.Vector.random2D().mult(1.6);
+        };
+        p.draw = () => {
+            p.clear();
+            let currentInstability = 5 + (sensitivitySlider.value / 100) * 30;
+            drawCellHelper(p, p.width * 0.4, currentInstability, finalCellBodyColor, finalNucleusColor);
+            pos.add(vel);
+            if (pos.x <= 0 || pos.x + p.width >= parentContainer.offsetWidth) { vel.x *= -1; }
+            if (pos.y <= 0 || pos.y + p.height >= parentContainer.offsetHeight) { vel.y *= -1; }
+            pos.x = p.constrain(pos.x, 0, parentContainer.offsetWidth - p.width);
+            pos.y = p.constrain(pos.y, 0, parentContainer.offsetHeight - p.height);
+            p.canvas.style.left = `${pos.x}px`;
+            p.canvas.style.top = `${pos.y}px`;
+        };
+    };
+    activeSketch = new p5(sketch);
+}
+
+function initStep4Sketch() {
+    let pos, vel;
+    const canvasSize = 250;
+    let parentContainer;
+    const sketch = p => {
+        p.setup = () => {
+            parentContainer = document.getElementById('result-page-container');
+            let c = p.createCanvas(canvasSize, canvasSize).parent(parentContainer);
+            c.style('position', 'absolute'); c.style('z-index', '1');
+            pos = p.createVector(p.random(parentContainer.offsetWidth - canvasSize), p.random(parentContainer.offsetHeight - canvasSize));
+            vel = p5.Vector.random2D().mult(3.0);
+        };
+        p.draw = () => {
+            p.clear();
+            drawCellHelper(p, p.width * 0.4, finalInstability, finalCellBodyColor, finalNucleusColor);
+            pos.add(vel);
+            if (pos.x <= 0 || pos.x + p.width >= parentContainer.offsetWidth) { vel.x *= -1; }
+            if (pos.y <= 0 || pos.y + p.height >= parentContainer.offsetHeight) { vel.y *= -1; }
+            pos.x = p.constrain(pos.x, 0, parentContainer.offsetWidth - p.width);
+            pos.y = p.constrain(pos.y, 0, parentContainer.offsetHeight - p.height);
+            p.canvas.style.left = `${pos.x}px`;
+            p.canvas.style.top = `${pos.y}px`;
+        };
+        p.windowResized = () => {
+             if (pos.x + p.width > parentContainer.offsetWidth) { pos.x = parentContainer.offsetWidth - p.width; }
+             if (pos.y + p.height > parentContainer.offsetHeight) { pos.y = parentContainer.offsetHeight - p.height; }
+        }
+    };
+    activeSketch = new p5(sketch);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    rebindDOM();
+});
+</script>
+</body>
+</html>
