@@ -8,14 +8,15 @@
     <link href="https://cdn.jsdelivr.net/gh/naver/d2codingfont/dist/d2coding.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
         :root {
-            --main-bg: #F9F9F9;
+            --main-bg: #F9F9F9; 
             --page-bg: #FFFFFF;
             --main-text: #111111;
             --border-color: #DDDDDD; 
-            --border-focus: #000000; /* 검은색 */
+            --border-focus: #000000;
             --gray-mid: #999;
             --gray-light: #F0F0F0;
             --button-hover-bg: #111111;
@@ -23,44 +24,28 @@
             font-family: 'D2Coding', monospace;
             font-size: 14px;
         }
-
         :root {
             --panel-width: 80px;
             --animation-speed: 0.4s;
-            --border-width: 1.5px; /* 테두리 두께 변수화 */
+            --border-width: 1.5px;
         }
-
-        /* [추가] 폰트 스타일 클래스 */
-        .font-thin {
-            font-family: 'D2Coding', monospace;
-            font-weight: normal; /* 400 */
-        }
-        .font-thick {
-            font-family: 'D2Coding', monospace;
-            font-weight: bold; /* 700 */
-        }
-
-
-        * {
-            box-sizing: border-box;
-        }
-
+        .font-thin { font-family: 'D2Coding', monospace; font-weight: normal; }
+        .font-thick { font-family: 'D2Coding', monospace; font-weight: bold; }
+        * { box-sizing: border-box; }
         body {
             transition: background 0.3s, color 0.3s;
-            background-color: var(--main-bg);
+            background-color: var(--main-bg); 
             color: var(--main-text);
             margin: 0;
             overflow: hidden; 
             height: 100vh;
         }
-
         .main-container {
             position: relative;
             width: 100vw;
             height: 100vh;
             display: none;
         }
-        
         .panel {
             position: absolute;
             top: 0;
@@ -75,27 +60,15 @@
             justify-content: center;
             align-items: center;
             z-index: 20;
-            /* [요청 2: transition에 background-color와 color 추가] */
             transition: left var(--animation-speed) ease-in-out, 
                         background-color var(--animation-speed) ease-in-out, 
                         color var(--animation-speed) ease-in-out;
             margin-left: 0;
-            color: var(--main-text); /* [요청 2] 기본 색상 지정 */
+            color: var(--main-text);
         }
-        
-        #panel-result { 
-            left: 0; 
-            margin-left: 0;
-        }
-        #panel-sensitivity { 
-            left: var(--panel-width); 
-            margin-left: calc(var(--border-width) * -1); 
-        }
-        #panel-survey { 
-            left: 0; 
-            margin-left: 0; 
-        } 
-
+        #panel-result { left: 0; margin-left: 0; }
+        #panel-sensitivity { left: var(--panel-width); margin-left: calc(var(--border-width) * -1); }
+        #panel-survey { left: 0; margin-left: 0; } 
         .content-area {
             position: absolute;
             top: 0;
@@ -105,207 +78,140 @@
             z-index: 10;
             overflow: hidden;
             border: none;
-            right: auto;
-            opacity: 1;
-            transition: none;
         }
-        
         .content-block {
             width: 100vw;
             height: 100%;
             display: block !important; 
-            background-color: var(--page-bg);
-            border: 1.5px solid var(--border-color); 
+            background-color: var(--page-bg); 
+            border: none; 
             position: absolute;
             top: 0;
             left: 100vw; 
             transition: left var(--animation-speed) ease-in-out, width var(--animation-speed) ease-in-out;
         }
-        
         #content-survey { z-index: 13; }
         #content-sensitivity { z-index: 14; }
         #content-result { z-index: 15; }
-
-
-        /* ============================================================
-        [CSS 로직]
-        ============================================================
-        */
-
-        /* State 1: Survey active */
         body.survey-active #panel-result { left: 0; margin-left: 0; }
         body.survey-active #panel-sensitivity { left: var(--panel-width); margin-left: calc(var(--border-width) * -1); }
         body.survey-active #panel-survey { left: calc(100vw - var(--panel-width)); margin-left: 0; }
-        
-        /* [요청 2: 활성 패널 스타일] */
-        body.survey-active #panel-survey {
-            background-color: var(--border-focus);
-            color: var(--page-bg);
-        }
-
+        body.survey-active #panel-survey { background-color: var(--border-focus); color: var(--page-bg); }
         body.survey-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
         body.survey-active #content-survey { left: calc(var(--panel-width) * 2); }
         body.survey-active #content-sensitivity { left: -100vw; }
         body.survey-active #content-result { left: -100vw; }
-
-        /* State 2: Sensitivity active */
         body.sensitivity-active #panel-result { left: 0; margin-left: 0; }
         body.sensitivity-active #panel-sensitivity { left: calc(100vw - var(--panel-width) * 2); margin-left: 0; } 
         body.sensitivity-active #panel-survey { left: calc(100vw - var(--panel-width)); margin-left: calc(var(--border-width) * -1); } 
-        
-        /* [요청 2: 활성 패널 스타일] */
-        body.sensitivity-active #panel-sensitivity {
-            background-color: var(--border-focus);
-            color: var(--page-bg);
-        }
-
+        body.sensitivity-active #panel-sensitivity { background-color: var(--border-focus); color: var(--page-bg); }
         body.sensitivity-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
         body.sensitivity-active #content-survey { left: calc(var(--panel-width) * 2); } 
         body.sensitivity-active #content-sensitivity { left: var(--panel-width); }
         body.sensitivity-active #content-result { left: -100vw; }
-
-        /* State 3: Result active */
         body.result-active #panel-result { left: calc(100vw - var(--panel-width) * 3); margin-left: 0; } 
         body.result-active #panel-sensitivity { left: calc(100vw - var(--panel-width) * 2); margin-left: calc(var(--border-width) * -1); } 
         body.result-active #panel-survey { left: calc(100vw - var(--panel-width)); margin-left: calc(var(--border-width) * -1); } 
-        
-        /* [요청 2: 활성 패널 스타일] */
-        body.result-active #panel-result {
-            background-color: var(--border-focus);
-            color: var(--page-bg);
-        }
-
+        body.result-active #panel-result { background-color: var(--border-focus); color: var(--page-bg); }
         body.result-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
         body.result-active #content-survey { left: calc(var(--panel-width) * 2); }
         body.result-active #content-sensitivity { left: var(--panel-width); }
         body.result-active #content-result { left: 0; }
-        /* ==================== CSS 끝 ==================== */
-
-        
-        .panel-content-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center; /* 메인 텍스트(#, Title)를 중앙 정렬 */
-            height: 100%;
-            width: 100%;
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
-            position: relative; /* 상단 타이틀의 기준점 */
-            overflow: hidden; 
-            color: inherit; /* [요청 2] .panel의 color를 상속받음 */
-        }
-
-        .panel-archive-title {
-            position: absolute;
-            /* [요청 1: 시각적 상단(CSS bottom)으로 이동] */
-            bottom: 25px; 
-            left: 50%;
-            transform: translateX(-50%); 
-
-            font-size: 0.8em; 
-            line-height: 1.4;
-            text-align: center;
-            opacity: 0.7;
-        }
-        .panel-archive-title span {
-            display: block; 
-        }
-        
-        .panel-number {
-            margin: 0;
-            font-size: 1.2em; 
-        }
-
-        .panel-main-title {
-            margin: 0;
-            margin-top: 8px; /* 넘버와 간격 */
-            font-size: 1.5em;
-            letter-spacing: 2px; 
-        }
-
-
-        .fullscreen-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .page-container {
-            text-align: center; width: 100%;
-            border: 1.5px solid var(--border-color);
-            padding: 30px 40px 40px; position: relative;
-            background-color: var(--page-bg);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            z-index: 5; 
-        }
-
+        .panel-content-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; writing-mode: vertical-rl; transform: rotate(180deg); position: relative; overflow: hidden; color: inherit; }
+        .panel-archive-title { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); font-size: 0.8em; line-height: 1.4; text-align: center; opacity: 0.7; }
+        .panel-archive-title span { display: block; }
+        .panel-number { margin: 0; font-size: 1.2em; }
+        .panel-main-title { margin: 0; margin-top: 8px; font-size: 1.5em; letter-spacing: 2px; }
+        .fullscreen-container { display: flex; align-items: center; justify-content: center; height: 100%; padding: 20px; box-sizing: border-box; }
+        .page-container { text-align: center; width: 100%; border: 1.5px solid var(--border-color); padding: 30px 40px 40px; position: relative; background-color: var(--page-bg); box-shadow: 0 4px 12px rgba(0,0,0,0.05); z-index: 5; }
         #step1-access .page-container { max-width: 480px;  } 
-        .container-header {
-            display: flex; justify-content: space-between; padding-bottom: 10px;
-            margin-bottom: 25px; border-bottom: 1.5px solid var(--border-color);
-            font-size: 0.9rem; opacity: 0.6;
-        }
+        .container-header { display: flex; justify-content: space-between; padding-bottom: 10px; margin-bottom: 25px; border-bottom: 1.5px solid var(--border-color); font-size: 0.9rem; opacity: 0.6; }
         #main-logo {
-            font-size: 2rem; letter-spacing: 0.5em; margin-bottom: 25px;
-            animation: flicker 1.5s infinite alternate;
-        }
-        @keyframes flicker {
-            0%, 100% { opacity: 1; text-shadow: 0 0 2px currentColor; } 
-            50% { opacity: 0.7; text-shadow: none; }
-        }
-        #terminal-output {
-            height: 100px; padding: 10px; font-size: 0.95rem; text-align: left;
-            margin-bottom: 20px; white-space: pre-wrap; background-color: var(--gray-light);
-            border-bottom: 1.5px solid var(--border-color);
-        }
-        .input-line {
-            display: flex; align-items: center; padding: 12px 0px;
-            border-bottom: 1.5px solid var(--border-color);
-        }
+    width: 140px; /* SVG 너비 설정 */
+    height: auto; /* 비율 유지 */
+    margin-bottom: 25px;
+    position: relative; /* <-- 이 줄을 추가 */
+    top: 10px;
+  
+    display: block; /* 중앙 정렬을 위해 block으로 변경 */
+    margin-left: auto;
+    margin-right: auto;
+}
+        @keyframes flicker { 0%, 100% { opacity: 1; text-shadow: 0 0 2px currentColor; } 50% { opacity: 0.7; text-shadow: none; } }
+        #terminal-output { height: 100px; padding: 10px; font-size: 0.95rem; text-align: left; margin-top: 40px; margin-bottom: 20px; white-space: pre-wrap; background-color: var(--gray-light); border-bottom: 1.5px solid var(--border-color); }
+        .input-line { display: flex; align-items: center; padding: 12px 0px; border-bottom: 1.5px solid var(--border-color); }
         .input-line:focus-within { border-color: var(--border-focus); }
         .input-line label { margin-right: 8px; font-weight: bold; font-size: 1rem; }
         #guest-id { background: none; border: none; outline: none; color: inherit; flex: 1; font-size: 1rem; }
-        button {
-            font-family: inherit; background: none; border: 1px solid currentColor;
-            color: inherit; padding: 12px 20px; width: 100%; margin-top: 20px;
-            cursor: pointer; transition: all 0.2s ease; border-radius: 4px;
-        }
+        button { font-family: inherit; background: none; border: 1px solid currentColor; color: inherit; padding: 12px 20px; width: 100%; margin-top: 20px; cursor: pointer; transition: all 0.2s ease; border-radius: 4px; }
         button:hover { background: var(--button-hover-bg); color: var(--button-hover-text); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; background: var(--gray-light) !important; color: var(--gray-mid) !important; border-color: var(--gray-mid) !important; }
 
-        #step2-protocol, #step3-culturing { align-items: stretch; justify-content: center; gap: 20px; }
-        .protocol-page { max-width: 650px; padding: 30px 40px 40px; flex: 1; }
-        .visualization-container {
-            width: 280px; flex-shrink: 0; border: 1.5px solid var(--border-color);
-            background-color: var(--page-bg); box-shadow: 0 4px 12px rgba(0,0,0,0.05); padding: 20px 30px;
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: flex-start; position: relative; overflow: hidden; 
+        #step2-protocol, #step3-culturing { justify-content: center; align-items: center; position: relative; overflow: hidden; }
+        .protocol-page, .culturing-page { 
+            border: none;
+            background: transparent;
+            box-shadow: none;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .viz-header {
-            width: 100%; padding-bottom: 10px; margin-bottom: 20px;
-            border-bottom: 1.5px solid var(--border-color); font-size: 0.9rem;
-            opacity: 0.6; text-align: center;
+        .content-wrapper {
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+            padding: 30px 40px;
+            background-color: transparent; 
+            border: 1.5px solid transparent;
+            backdrop-filter: none; 
+            -webkit-backdrop-filter: none; 
         }
+        .background-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5; 
+            pointer-events: none;
+        }
+
         #progress-bar-container { width: 100%; height: 8px; background: rgba(0,0,0,0.1); margin-bottom: 30px; border-radius: 4px; overflow: hidden; }
         #progress-indicator { width: 0%; height: 100%; background: currentColor; transition: width 0.4s ease; }
-        .question-step { display: none; animation: fade-in 0.4s ease; text-align: left; }
-        @keyframes fade-in { from {opacity: 0;} to {opacity: 1;} }
-        .main-question { font-size: 1.4rem; margin-bottom: 10px; font-weight: bold; }
-        .sub-text { opacity: 0.6; margin-bottom: 25px; font-size: 0.95rem; }
-        .choice-button {
-            display: block; width: 100%; padding: 12px 18px; border: 1.5px solid var(--border-color);
-            background: var(--page-bg); text-align: left; font-size: 1.05rem; margin-bottom: 10px;
-            transition: 0.2s; border-radius: 4px;
+        
+        .navigation-buttons { 
+            display: flex; 
+            justify-content: space-between; 
+            margin-bottom: 15px; 
         }
+        .nav-button { 
+            width: auto; 
+            padding: 8px 15px; 
+            margin-top: 0; 
+            font-size: 1.2rem; 
+            font-weight: bold;
+        }
+        .nav-button:disabled { 
+            opacity: 0.3; 
+            cursor: not-allowed; 
+        }
+        
+        .question-step { 
+            display: none; 
+            text-align: left; 
+        }
+        .main-question { font-size: 1.6rem; margin-bottom: 10px; font-weight: bold; }
+        .sub-text { opacity: 0.6; margin-bottom: 25px; font-size: 1.05rem; }
+        .choice-button { display: block; width: 100%; padding: 14px 20px; border: 1.5px solid var(--border-color); background: var(--page-bg); text-align: left; font-size: 1.05rem; margin-bottom: 10px; transition: 0.2s; border-radius: 4px; }
         .choice-button:hover { background: var(--button-hover-bg); color: var(--button-hover-text); border-color: var(--button-hover-bg); }
         .choices.button-choices-scale { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 20px; }
-        .choices.button-choices-scale .choice-button { width: 18%; padding: 10px 8px; text-align: center; font-size: 0.9rem; margin-bottom: 0; }
-
-        .culturing-page { max-width: 650px; }
-        #step3-title { font-size: 1.8rem; text-align: center; margin-bottom: 20px; }
+        .choices.button-choices-scale .choice-button { width: 18%; padding: 12px 8px; text-align: center; font-size: 0.9rem; margin-bottom: 0; }
+        #step3-title { font-size: 2.0rem; text-align: center; margin-bottom: 20px; }
         .slider-wrapper { display: flex; align-items: center; justify-content: center; width: 100%; margin: 40px 0; }
         .slider-label { font-size: 0.9rem; opacity: 0.7; margin: 0 15px; }
         #sensitivity-slider { flex: 1; -webkit-appearance: none; appearance: none; width: 100%; height: 8px; background: var(--gray-light); border: 1px solid var(--main-text); outline: none; cursor: pointer; }
@@ -314,45 +220,48 @@
         #inject-progress-fill { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background-color: var(--button-hover-bg); transition: width 0.05s linear; z-index: 1; }
         #inject-text { position: relative; z-index: 2; }
         #inject-button.injecting #inject-text { color: var(--button-hover-text); }
-
+        
         #step4-result { height: 100%; overflow-y: auto; position: relative; } 
-        .result-page { 
-            max-width: 900px; text-align: left; padding: 25px 30px 30px; 
-            position: relative; overflow: visible; 
-        }
-        .result-title { font-size: 1.6rem; letter-spacing: 0.05em; margin-bottom: 20px; font-weight: bold; text-align: center; }
-        .result-wrapper { display: flex; gap: 20px; align-items: stretch; }
-        .result-panel { flex: 1; border: 1.5px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05); padding: 25px; display: flex; flex-direction: column; }
-        .chart-container { width: 100%; flex: 1; min-height: 250px; }
-        #result-cell-info {
-            width: 100%; text-align: left; padding: 15px; background-color: var(--gray-light);
-            border: 1.5px solid var(--border-color); line-height: 1.5; font-size: 0.95rem;
-        }
-        #result-cell-info p { margin: 5px 0; }
-        #result-cell-info strong { color: var(--border-focus); }
-        .final-message { opacity: 0.7; font-size: 0.9rem; margin-top: 15px; text-align: center; }
-        #restart-button { margin-top: 20px; padding: 10px 20px; }
+        #step4-result.fullscreen-container { align-items: flex-start; padding-top: 40px; padding-bottom: 40px; }
+        .result-page { max-width: 900px; text-align: left; padding: 25px 40px 40px; position: relative; overflow: visible; margin: 0 auto; border-color: transparent; box-shadow: none; }
+        .result-title { font-size: 1.2rem; letter-spacing: 0.05em; margin-bottom: 5px; font-weight: bold; text-align: center; opacity: 0.8; }
+        #result-cell-name-display { font-size: 2.5rem; font-weight: bold; margin-bottom: 25px; text-align: center; color: var(--border-focus); }
+        .result-content { width: 100%; }
+        .chart-container { 
+    width: 100%; 
+    max-width: 500px; 
+    margin: 0 auto 30px auto; 
+    padding: 15px; 
+    border: 1.5px solid var(--border-color); 
+    box-sizing: border-box; 
+    display: flex; /* <-- 이 줄 추가 */
+    justify-content: center; /* <-- 이 줄 추가 */
+}
+        #result-cell-info, #result-analysis-data { width: 100%; text-align: left; line-height: 1.7; font-size: 1.05rem; }
+        .result-info-heading { font-weight: bold; font-size: 1.2rem; color: var(--main-text); border-bottom: 1.5px solid var(--border-color); padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px; }
+        #result-cell-info p, #result-analysis-data p { margin: 10px 0; font-size: 1.05rem; }
+        #result-analysis-data p strong { color: var(--border-focus); min-width: 250px; display: inline-block; }
+        .final-message { opacity: 0.7; font-size: 0.9rem; margin-top: 25px; text-align: center; }
+        .result-buttons { display: flex; gap: 15px; margin-top: 30px; }
+        .result-buttons button { flex: 1; margin-top: 0; padding: 10px 20px; }
 
         @media (max-width: 1100px) { 
-            .result-wrapper { flex-direction: column; }
             body.survey-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
             body.sensitivity-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
             body.result-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
         }
         @media (max-width: 768px) {
-            #step2-protocol, #step3-culturing { flex-direction: column; }
-            .visualization-container { width: 100%; max-width: 300px; height: auto; }
             .choices.button-choices-scale { flex-direction: column; }
             .choices.button-choices-scale .choice-button { width: 100%; margin-bottom: 10px; }
-            
-             :root {
-                --panel-width: 60px; 
-            }
+             :root { --panel-width: 60px; }
             .panel h3 { font-size: 1.2em; }
             body.survey-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
             body.sensitivity-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
             body.result-active .content-block { width: calc(100vw - var(--panel-width) * 3); }
+            #result-cell-name-display { font-size: 2rem; }
+            .result-info-heading { font-size: 1.1rem; }
         }
+        @media print { body { display: none; } }
     </style>
 </head>
 <body> 
@@ -360,7 +269,50 @@
     <section id="step1-access" class="fullscreen-container">
         <div class="page-container">
             <div class="container-header"><span>[ FILE: ECA_ACCESS.LOG ]</span></div>
-            <h1 id="main-logo">E . C . A  .</h1>
+            <svg id="main-logo" data-name="레이어_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 592.37 293.42">
+  <defs>
+    <style>
+      .st0 {
+        font-family: D2CodingBold, D2Coding;
+        font-size: 35.61px;
+      }
+
+      .st1 {
+        stroke-width: 2.73px;
+      }
+
+      .st1, .st2, .st3, .st4 {
+        fill: none;
+        stroke: #000;
+        stroke-miterlimit: 10;
+      }
+
+      .st2 {
+        stroke-width: 2.72px;
+      }
+
+      /* .st3 중복 오류 수정 */
+      .st3 {
+        stroke-width: 2.78px;
+      }
+
+      .st4 {
+        stroke-width: 2.68px;
+      }
+    </style>
+  </defs>
+  <path d="M592.37,23.25c0,4.49-1.58,8.31-4.74,11.47-3.16,3.16-6.98,4.73-11.47,4.73s-8.31-1.57-11.47-4.73-4.73-6.98-4.73-11.47,1.57-8.31,4.73-11.47c3.16-3.16,6.98-4.73,11.47-4.73s8.31,1.57,11.47,4.73,4.74,6.98,4.74,11.47ZM591.27,23.32c0-4.15-1.47-7.69-4.4-10.63-2.94-2.93-6.48-4.41-10.63-4.41s-7.69,1.47-10.63,4.41c-2.93,2.93-4.4,6.48-4.4,10.63s1.47,7.69,4.4,10.63c2.94,2.93,6.48,4.41,10.63,4.41s7.69-1.47,10.63-4.41c2.93-2.93,4.4-6.48,4.4-10.63ZM586.03,29.33c0,3.18-1.17,4.77-3.5,4.77-1.02,0-1.83-.35-2.42-1.07-.59-.71-.89-1.75-.89-3.11,0-2.11-.31-3.63-.91-4.55-.71-1.04-1.94-1.56-3.71-1.56h-1.64v8.05c0,.65.37.98,1.1.98h2.18v1.02h-9.57v-1.02h2.04c.87,0,1.31-.33,1.31-.98V15.39c0-.41-.1-.69-.29-.84-.19-.14-.53-.22-1.02-.22h-2.04v-1.05h10.63c2.04,0,3.63.46,4.78,1.37,1.16.91,1.73,2.16,1.73,3.73,0,1.26-.43,2.32-1.28,3.17-.58.58-1.35,1.02-2.29,1.31-.72.22-1.75.4-3.05.54,1.6.49,2.7,1.01,3.31,1.57.53.49.9,1.14,1.09,1.96.46,1.82.73,2.86.8,3.13.41,1.43.91,2.14,1.49,2.14.8,0,1.2-.96,1.2-2.87h.95ZM580.61,18.52c0-1.82-.49-3.02-1.46-3.6-.66-.39-1.93-.59-3.83-.59-.97,0-1.6.05-1.91.15-.3.1-.46.39-.46.87v7.35h2.44c3.47,0,5.2-1.4,5.2-4.19Z"/>
+  <g>
+    <path class="st1" d="M53.63,110.76c-.2,4.13,2.09,9.44,6.36,10.2,3.16.56,5.35-1.72,8.59-.74,2.05.62,2.28,1.87,3.51,2.85,6.06,4.85,29.41-2.26,38.06-7.72.84-.53,3.36-2.19,7.25-3.77,3.39-1.38,6.06-1.99,7.01-2.23,10.99-2.83,14.34-14.29,31.38-22.09,3.63-1.66,3.1-.97,5.85-2.34,8.87-4.43,16.8-12.85,18.49-21.74.54-2.83.2-4.48,1.81-7.45,2-3.69,4.44-4.72,7.12-7.85,3.87-4.52,4.41-8.97,4.94-13.4.8-6.61-.89-11.77-1.98-14.43-1.79-4.32-5.71-13.84-14.51-14.99-4.05-.53-5.1,1.23-11.2,1.67-9.12.65-11.49-2.95-19.92-4.08-10.91-1.46-26.02,1.99-34.07,8.96-3.73,3.22-5.39,6.72-11.68,9.2-4.76,1.88-6.64.99-9.02,2.93-4.39,3.57-.14,8.39-4.94,12.68-2.1,1.88-2.9.93-6.55,3.38-5.58,3.74-4.79,6.66-9.21,8.95-3.71,1.92-4.98.22-10.15,1.83-7.29,2.26-11.42,7.69-14.24,11.4-3.24,4.25-2.09,6.57-5.7,8.85-3.15,1.99-5.27,1.33-7.27,3.35-2.77,2.8.07,5.3-2.57,8.26-2.36,2.64-5.3,1.41-8.01,3.87-4.29,3.89.13,9.63-3.99,12.02-1.88,1.09-3.3.31-4.84,1.44-2.12,1.55-.07,4.66.28,8.5.32,3.54-.95,6.09-3.42,11.04-4.07,8.16-10.37,9.41-9.59,13.83.32,1.82,1.56,2.95,2.01,6.64.23,1.91.1,3.25.04,4.23-.19,3.27-.62,10.82,4.34,16.03,2.22,2.33,2.86,1.39,6.65,4.69,5.49,4.77,3.85,6.46,7.24,8.4,5.71,3.26,11.77-.72,20.41,2.59,3.95,1.52,2.72,2.37,6.81,4.28,12.36,5.79,30.52,1.29,35.41-2.02.41-.27,1.08-.78,2.23-1.21,4.31-1.6,8.91.32,9.53-.54.38-.52-1.36-1.2-1.09-1.96.55-1.56,7.5-.53,14.38-2.24,7.81-1.94,12.19-6.99,15.76-10.9,1.8-1.97,2.43-3.1,2.61-4.35.56-3.81-3.18-7.93-6.94-7.97-1.99-.02-3.44,1.1-4.63,1.84-7.36,4.58-14.58.86-29.78,3.39-9.81,1.63-11.19,3.91-19.52,3.95-4.37.02-9.1-.1-12.71-2.41-2.09-1.33-2.53-3.03-5.39-3.92-2.46-.77-3.88-.14-6.88-.28-3.4-.15-9.1-1.28-11.23-4.26-3.04-4.27,2.31-10.84,3.44-12.23,2.35-2.89,3.91-3.19,5.22-5.89,1.6-3.29.54-5.34.62-7.93.26-8.83,13.7-16.93,15.27-16.18.7.33-1.K-1.59,5.9Z"/>
+    <path class="st2" d="M152.13,68.01c1.96-4.03,2.51-4.49,4.76-8.75,3.26-6.16,2.53-6,4.73-9.87,3.8-6.7,5.39-6.16,6.86-10.27,2.03-5.68,1.18-12.86-1.76-14.11-2-.85-3.26,1.77-7.66,1.86-4.16.09-5.22-2.21-7.99-1.61-3.3.71-4.05,4.44-6.97,8.42-3.79,5.15-7.07,5.06-13.08,9.33-12.23,8.71-8.44,16.1-19.51,22.85-6.48,3.96-10.06,2.81-14.19,7.85-.94,1.14-6.21,7.57-3.44,13.37,1.98,4.17,7.36,6.44,11.31,5.5,1.57-.37,2.01-1.04,3.77-2.14,7.76-4.85,13.28-.69,17.71-4.98,3.05-2.96,2.06-6.51,5.19-7.58,2.6-.88,5.27.89,6.3-.42.79-1-.58-2.3.07-3.43,1.33-2.29,7.98,1.27,11.66-1.81.7-.59.58-.81,2.24-4.23Z"/>
+  </g>
+  <path class="st4" d="M231.37,103.6c.76-.69,2.36-2.28,3.98-6.32,2.69-6.7.66-8.22,2.86-11.45,2.33-3.44,5.26-2.65,12.14-7,9.62-6.08,6.85-9.47,15.73-14.3,6.18-3.36,10.39-3.28,12.58-6.85,1.32-2.15.9-5,3.7-6.32.91-.42,1.38-.34,3.13-1.08.7-.3,2.87-1.21,4.12-2.38,2.41-2.26-.02-4.1,1.73-5.94,2.73-2.87,10.81-.61,13.48-3.67.95-1.09.1-1.59,1.44-3.21,1.84-2.23,4.95-3.12,5.57-3.29,1.87-.51,2.68-.29,4.25-.48,5.12-.64,5.73-4.14,9.93-5.32,5.68-1.6,8.38,3.84,16.87,2.76,3.53-.45,4.64-1.57,8.88-1.64,2.83-.04,6.73-.11,8.34,1.62,1.76,1.89-.39,4.67-1.01,11.92-.15,1.81.49,2.3.96,2.67,2.74,2.16,11.52.57,16.42-3.18,4.19-3.21,4.54-7.26,4.86-11.01.32-3.68,1.23-11.9-5.74-16.02-5.96-3.53-12.7-1.38-17.87-5.94-.92-.81-2.67-2.61-5.86-3.06-2.1-.29-3.32.21-5.25.45-7.6.95-10.8-4.12-16.97-3.07-2.57.44-1.94,1.31-6.11,3.12-9.02,3.92-14.76,1.06-21.21,5.06-1.82,1.13-1.65,1.53-4.42,3.27-3.12,1.95-4.73,2.32-7.93,4.45-2.59,1.72-1.81,1.67-3.59,2.7-5.73,3.33-8.09,1.98-14.46,5.95-1.74,1.09-6.93,3.87-10.85,7.69-6.19,6.04-4.09,9.31-8.71,11.19-4.05,1.65-6.3-.62-10.39,1.12-3.71,1.58-2.84,3.87-7.92,9.82-4.58,5.37-6.13,4.49-7.54,7.72-.96,2.18-1.57,5.1-4.62,7.79-.34.3-.72.58-1.17.86-3.16,1.96-5.26,1.34-7.28,3.32-2.8,2.74,0,5.15-2.67,8.05-2.38,2.58-5.29,1.41-8.03,3.83-4.32,3.82,0,9.36-4.12,11.71-1.89,1.08-3.29.33-4.84,1.44-2.13,1.53-.13,4.53.17,8.26.27,3.44-1.03,5.93-3.55,10.76-4.16,7.96-10.45,9.23-9.73,13.52.3,1.77,1.52,2.85,1.92,6.44.21,1.86.05,3.15-.01,4.11-.23,3.18-.76,10.53,4.12,15.54,2.18,2.25,2.83,1.33,6.57,4.51,5.41,4.59,3.75,6.25,7.11,8.11,5.65,3.12,11.74-.8,20.3,2.35,3.92,1.44,2.68,2.28,6.73,4.11,12.24,5.53,30.39,1,35.3-2.26.41-.27,1.08-.77,2.24-1.19,4.32-1.59,8.87.23,9.51-.6.39-.51-1.34-1.16-1.06-1.9.55-1.46,7.85-.53,14.35-2.3,10.29-2.8,14.84-11.38,15.22-12.12,1.04-2.04,4.77-9.38-.64-13.78-3.39-2.76-10.03-4.11-13.38-2.21-4.56,2.6-.24,9.71-4.77,11.93-2.39,1.17-4.46-.24-9.89-.49-8.09-.38-9.78,2.49-20.01,3.83-6.99.92-18.9,1.24-21.33-2.69-1.19-1.93-.03-4.76-1.51-5.05-.98-.19-1.76,1.01-3.81,1.28-1.48.2-2.32-.25-4.61-1.01-4.98-1.65-7.52-1.68-7.46-2.42.05-.6,1.68-.57,3.19-1.57,3.3-2.19,2.94-7.29,1.14-10.78-1.35-2.62-2.75-2.85-2.56-4.46.34-2.9,5-3.29,7.35-6.43,4.15-5.57-5.12-11.52-.82-16.08,1.9-2.02,4.19-1.35,7.52-4.37Z"/>
+  <g>
+    <path class="st3" d="M477.61,83.87c-1.58-.43,2.93-11.64-1.57-14.15-1.65-.92-3.67-.21-7.29-1.88-1.86-.86-2.94-1.79-3.44-2.17-6.3-4.76-26.76-2.09-36.52,3.09-.87.46-3.52,1.93-7.4,3.12-3.38,1.04-5.96,1.33-6.88,1.46-10.66,1.56-15.95,13.71-33.14,19.88-3.66,1.31-3.04.63-5.84,1.75-9.02,3.62-17.94,11.77-21.21,21.33-1.04,3.04-1.05,4.91-3.1,7.96-2.55,3.79-5,4.57-8.07,7.63-4.43,4.43-5.78,9.25-7.13,14.06-2.01,7.17-1.46,13.1-.96,16.19.81,5.02,2.59,16.06,10.46,18.59,3.62,1.16,4.93-.63,10.63-.24,8.51.58,10,4.88,17.55,7.33,9.76,3.17,24.33,1.51,33.08-5.03,4.05-3.02,6.26-6.64,12.52-8.48,4.74-1.39,6.31-.15,8.86-1.94,4.73-3.31,1.75-9.23,6.99-13.27,2.3-1.77,2.85-.62,6.68-2.8,5.86-3.33,5.7-6.66,10.2-8.55,3.79-1.59,4.63.46,9.7-.58,7.14-1.46,11.99-6.85,15.3-10.53,4.56-5.07,5.56-9.18,6.95-8.95,1.83.3-1.15,7.12,3.22,13.01,2.48,3.35,5.11,3.38,7.91,8.11,1.26,2.13,1.33,3.14,2.84,4.26,2.58,1.93,5.54,1.34,9.1,1.73,5.54.6,6.19,2.89,11.9,5,1.4.52,12.33,4.41,22.82.83,4.9-1.67,8.2-4.46,14.58-4.45,2.19,0,2.63.33,4.26.03,5.44-1.03,11.29-6.75,10.31-12.11-.41-2.25-2.09-4.79-4.99-6.06-6-2.61-9.89,3.45-20.83,3.17-7.47-.19-8.54-3.08-16.99-2.69-1.74.08-3.84.3-5.81-.8-2.42-1.36-2.62-3.6-4.37-7.15-2.33-4.69-3.5-3.82-5.1-7.32-3.01-6.58,1.32-9.23-1.69-16.48-1.14-2.76-2.91-5.11-1.77-6.27,1.01-1.03,3.07.14,4.73-.9,2.25-1.41.96-5.13,1.38-9.41.39-3.95,2.05-6.58,5.28-11.68,5.24-8.28,8.31-7.67,11.49-13.88,2.07-4.04,2.3-7.44,2.77-14.25.47-6.83.81-11.83-1.32-17.53-2.85-7.63-8.45-12.05-12.41-15.17-9.21-7.26-18.98-9.78-25.54-11.4-1.22-.3-8.78-1.14-23.9-2.82-7.12-.79-17.57-1.9-18.42.2-.33.82,1.02,1.52.63,2.31-.81,1.63-7.01-.48-13.67.42-6.21.84-12.91,4.32-16.6,9.77-1.03,1.52-4.15,6.12-2.77,11.2,1.9,6.99,11.17,10.67,18.43,10.47,4.51-.13,4.64-1.65,15.68-5.53,9.79-3.44,15.13-5.25,21.67-4.38,3.01.4,8.02,1.06,11.24,4.47,1.7,1.8,1.81,3.23,4.2,5.09,3.09,2.41,4.81,1.51,7.07,3.3,3.86,3.05,4,9.73,1.38,14.18-1.56,2.66-3.83,4.05-5.2,4.99-12.74,8.69-16.09,24.39-17.91,23.89Z"/>
+    <path class="st3" d="M400.2,109.8c-2.76,3.43-3.41,3.78-6.5,7.37-4.48,5.2-3.71,5.15-6.68,8.4-5.13,5.62-6.65,4.93-8.92,8.49-3.14,4.92-3.65,11.58-.89,13.09,1.87,1.03,3.65-1.2,8.14-.72,4.24.45,4.89,2.68,7.81,2.49,3.48-.22,4.96-3.54,8.68-6.79,4.83-4.21,8.14-3.71,15.06-6.84,14.09-6.38,11.63-13.6,24.16-18.35,7.34-2.78,10.75-1.28,15.91-5.35,1.17-.92,7.74-6.11,6.04-11.75-1.22-4.06-6.26-6.81-10.45-6.46-1.67.14-2.24.69-4.24,1.47-8.81,3.44-13.63-1.06-18.94,2.28-3.66,2.31-3.33,5.68-6.71,6.25-2.8.47-5.18-1.48-6.48-.42-.99.81.16,2.17-.72,3.12-1.78,1.92-7.86-2.17-12.2.17-.82.44-.74.67-3.08,3.57Z"/>
+  </g>
+  <text class="st0" transform="translate(2.86 240.47)"><tspan x="0" y="0">emotion cell</tspan><tspan x="0" y="42.73">archive</tspan></text>
+</svg>
             <div id="terminal-output"></div>
             <div class="input-line">
                 <label for="guest-id">ACCESS ID :</label>
@@ -372,54 +324,23 @@
 
     <div class="main-container">
         <div class="panel" id="panel-survey" data-target="content-survey">
-            <div class="panel-content-wrapper">
-                <div class="panel-archive-title font-thin">
-                    <span>EMOTION</span>
-                    <span>CELL</span>
-                    <span>ARCHIVE</span>
-                </div>
-                <h3 class="panel-number font-thick">#001</h3>
-                <h2 class="panel-main-title font-thick">MOTIF CELL CULTURING</h2>
-            </div>
+            <div class="panel-content-wrapper"><div class="panel-archive-title font-thin"><span>EMOTION</span><span>CELL</span><span>ARCHIVE</span></div><h3 class="panel-number font-thick">#001</h3><h2 class="panel-main-title font-thick">MOTIF CELL CULTURING</h2></div>
         </div>
         <div class="panel" id="panel-sensitivity" data-target="content-sensitivity">
-            <div class="panel-content-wrapper">
-                <div class="panel-archive-title font-thin">
-                    <span>EMOTION</span>
-                    <span>CELL</span>
-                    <span>ARCHIVE</span>
-                </div>
-                <h3 class="panel-number font-thick">#002</h3>
-                <h2 class="panel-main-title font-thick">SENSITIVITY</h2>
-            </div>
+            <div class="panel-content-wrapper"><div class="panel-archive-title font-thin"><span>EMOTION</span><span>CELL</span><span>ARCHIVE</span></div><h3 class="panel-number font-thick">#002</h3><h2 class="panel-main-title font-thick">SENSITIVITY</h2></div>
         </div>
         <div class="panel" id="panel-result" data-target="content-result">
-            <div class="panel-content-wrapper">
-                <div class="panel-archive-title font-thin">
-                    <span>EMOTION</span>
-                    <span>CELL</span>
-                    <span>ARCHIVE</span>
-                </div>
-                <h3 class="panel-number font-thick">#003</h3>
-                <h2 class="panel-main-title font-thick">RESULT</h2>
-            </div>
+            <div class="panel-content-wrapper"><div class="panel-archive-title font-thin"><span>EMOTION</span><span>CELL</span><span>ARCHIVE</span></div><h3 class="panel-number font-thick">#003</h3><h2 class="panel-main-title font-thick">RESULT</h2></div>
         </div>
         
         <div class="content-area">
-            <div class="content-block" id="content-survey">
-                <section id="step2-protocol" class="fullscreen-container"></section>
-            </div>
-            <div class="content-block" id="content-sensitivity">
-                <section id="step3-culturing" class="fullscreen-container"></section>
-            </div>
-            <div class="content-block" id="content-result">
-                <section id="step4-result" class="fullscreen-container"></section>
-            </div>
+            <div class="content-block" id="content-survey"><section id="step2-protocol" class="fullscreen-container"></section></div>
+            <div class="content-block" id="content-sensitivity"><section id="step3-culturing" class="fullscreen-container"></section></div>
+            <div class="content-block" id="content-result"><section id="step4-result" class="fullscreen-container"></section></div>
         </div>
     </div>
 
 <script>
-// --- (JavaScript의 다른 부분은 변경사항이 없습니다) ---
 // --- 전역 변수 ---
 let userAnswers = {}, resultChart = null, activeSketch = null, activePanelId = null;
 let currentQuestion = 1, totalQuestions = 6;
@@ -434,361 +355,472 @@ const step1 = document.getElementById('step1-access');
 const mainContainer = document.querySelector('.main-container');
 const panels = document.querySelectorAll('.panel');
 const contentBlocks = document.querySelectorAll('.content-block');
-const accessButton = document.getElementById('access-button'), guestInput = document.getElementById('guest-id'), terminalOutput = document.getElementById('terminal-output');
-const restartButton = document.getElementById('restart-button'); 
+let accessButton, guestInput, terminalOutput;
 
-const EMOTION_DATABASE = [ { name: '기쁨', vitality: 8, empathy: 7, self_assurance: 8, relationship_stability: 8, emotion_control: 7, life_meaning: 9 }, { name: '희열', vitality: 10, empathy: 8, self_assurance: 9, relationship_stability: 9, emotion_control: 8, life_meaning: 10 }, { name: '만족', vitality: 6, empathy: 7, self_assurance: 8, relationship_stability: 7, emotion_control: 8, life_meaning: 8 }, { name: '자부심', vitality: 7, empathy: 6, self_assurance: 10, relationship_stability: 7, emotion_control: 8, life_meaning: 9 }, { name: '안도', vitality: 5, empathy: 7, self_assurance: 7, relationship_stability: 8, emotion_control: 9, life_meaning: 7 }, { name: '기대', vitality: 7, empathy: 6, self_assurance: 7, relationship_stability: 6, emotion_control: 6, life_meaning: 8 }, { name: '흐뭇함', vitality: 6, empathy: 8, self_assurance: 7, relationship_stability: 9, emotion_control: 8, life_meaning: 8 }, { name: '애정', vitality: 7, empathy: 9, self_assurance: 7, relationship_stability: 10, emotion_control: 8, life_meaning: 8 }, { name: '공감', vitality: 6, empathy: 10, self_assurance: 6, relationship_stability: 8, emotion_control: 7, life_meaning: 7 }, { name: '활기', vitality: 9, empathy: 6, self_assurance: 7, relationship_stability: 6, emotion_control: 7, life_meaning: 7 }, { name: '들뜸', vitality: 10, empathy: 6, self_assurance: 6, relationship_stability: 7, emotion_control: 5, life_meaning: 7 }, { name: '슬픔', vitality: 3, empathy: 7, self_assurance: 4, relationship_stability: 5, emotion_control: 3, life_meaning: 3 }, { name: '허무', vitality: 2, empathy: 4, self_assurance: 3, relationship_stability: 3, emotion_control: 2, life_meaning: 1 }, { name: '서운', vitality: 4, empathy: 6, self_assurance: 4, relationship_stability: 3, emotion_control: 4, life_meaning: 4 }, { name: '자책', vitality: 3, empathy: 5, self_assurance: 1, relationship_stability: 4, emotion_control: 4, life_meaning: 2 }, { name: '외로움', vitality: 3, empathy: 5, self_assurance: 4, relationship_stability: 2, emotion_control: 3, life_meaning: 3 }, { name: '억울', vitality: 5, empathy: 4, self_assurance: 3, relationship_stability: 2, emotion_control: 2, life_meaning: 3 }, { name: '분개', vitality: 8, empathy: 2, self_assurance: 4, relationship_stability: 1, emotion_control: 1, life_meaning: 2 }, { name: '질투', vitality: 6, empathy: 3, self_assurance: 2, relationship_stability: 1, emotion_control: 2, life_meaning: 3 }, { name: '무시', vitality: 4, empathy: 1, self_assurance: 3, relationship_stability: 1, emotion_control: 3, life_meaning: 2 },  { name: '답답', vitality: 4, empathy: 5, self_assurance: 4, relationship_stability: 4, emotion_control: 3, life_meaning: 3 }, { name: '조급', vitality: 7, empathy: 4, self_assurance: 5, relationship_stability: 5, emotion_control: 1, life_meaning: 4 }, { name: '불신', vitality: 5, empathy: 3, self_assurance: 4, relationship_stability: 1, emotion_control: 4, life_meaning: 3 }, { name: '위축', vitality: 2, empathy: 5, self_assurance: 2, relationship_stability: 3, emotion_control: 2, life_meaning: 2 }, { name: '죄책감', vitality: 3, empathy: 6, self_assurance: 1, relationship_stability: 4, emotion_control: 4, life_meaning: 2 }, { name: '배신', vitality: 6, empathy: 2, self_assurance: 3, relationship_stability: 1, emotion_control: 2, life_meaning: 2 },  { name: '무기력', vitality: 1, empathy: 3, self_assurance: 2, relationship_stability: 3, emotion_control: 2, life_meaning: 1 }, { name: '공허', vitality: 2, empathy: 3, self_assurance: 3, relationship_stability: 2, emotion_control: 2, life_meaning: 1 }, { name: '냉소', vitality: 5, empathy: 2, self_assurance: 5, relationship_stability: 3, emotion_control: 6, life_meaning: 2 }, { name: '긴장', vitality: 7, empathy: 5, self_assurance: 5, relationship_stability: 4, emotion_control: 3, life_meaning: 4 } ];
+// --- 상세한 감정 데이터베이스 (전체) ---
+// --- 상세한 감정 데이터베이스 (전체) ---
+const EMOTION_DATABASE = [
+    { name: '기쁨', eng_name: 'Joy', vitality: 8, empathy: 7, self_assurance: 8, relationship_stability: 8, emotion_control: 7, life_meaning: 9,
+      definition: "현재 상황에 대한 긍정적이고 만족스러운 반응입니다.",
+      manifestation: "성공적인 경험이나 소중한 사람들과의 교류에서 주로 발현됩니다. 긍정적인 에너지가 느껴지며, 주변 사람들과 이 감정을 나누고 싶어집니다.",
+      potential: "이 감정은 '감사'와 '희열'로 발전하여 삶의 긍정적인 면을 강화합니다. 과도한 기쁨은 때때로 비현실적인 기대로 이어질 수 있으니 균형이 중요합니다.",
+      related_cells: ['희열', '만족', '애정'] },
+    { name: '희열', eng_name: 'Ecstasy', vitality: 10, empathy: 8, self_assurance: 9, relationship_stability: 9, emotion_control: 8, life_meaning: 10,
+      definition: "강렬한 기쁨과 성취감이 절정에 달한 상태입니다.",
+      manifestation: "오랫동안 바라던 목표를 달성했거나, 압도적인 경험을 할 때 나타납니다. 에너지가 폭발하며, 세상을 다 가진 듯한 느낌을 받습니다.",
+      potential: "강력한 동기부여의 원천이 되지만, 이 감정에만 의존하면 일상적인 '기쁨'이나 '만족'을 무시하게 될 수 있습니다. 다음 목표를 향한 에너지로 전환하는 것이 좋습니다.",
+      related_cells: ['기쁨', '들뜸', '자부심'] },
+    { name: '만족', eng_name: 'Satisfaction', vitality: 6, empathy: 7, self_assurance: 8, relationship_stability: 7, emotion_control: 8, life_meaning: 8,
+      definition: "자신의 상태나 결과에 대해 부족함 없이 흡족한 상태입니다.",
+      manifestation: "기대했던 바가 충족되었을 때 나타납니다. '희열'처럼 뜨겁진 않지만, '안도'보다 더 깊은 긍정 상태이며, 내면이 꽉 찬 느낌을 줍니다.",
+      potential: "현재 상태에 안주하여 '무기력'이나 '지루함'으로 변질될 수 있습니다. 이 만족감을 기반으로 새로운 '기대'를 설정하는 것이 좋습니다.",
+      related_cells: ['안도', '흐뭇함', '기쁨'] },
+    { name: '자부심', eng_name: 'Pride', vitality: 7, empathy: 6, self_assurance: 10, relationship_stability: 7, emotion_control: 8, life_meaning: 9,
+      definition: "스스로의 성취, 능력, 또는 가치에 대해 긍정적으로 평가하는 감정입니다.",
+      manifestation: "자신의 선택과 행동에 대한 강한 확신으로 나타납니다. 타인의 평가에 쉽게 흔들리지 않는 내면의 단단함을 느낍니다.",
+      potential: "'자신감'과 '활기'의 원천이 됩니다. 다만, 과도할 경우 '오만'이 되어 타인에 대한 '공감' 능력을 저하시킬 수 있습니다.",
+      related_cells: ['만족', '희열', '냉소'] },
+    { name: '안도', eng_name: 'Relief', vitality: 5, empathy: 7, self_assurance: 7, relationship_stability: 8, emotion_control: 9, life_meaning: 7,
+      definition: "걱정이나 긴장 상태가 해소되면서 마음이 놓이는 상태입니다.",
+      manifestation: "불확실한 결과가 긍정적으로 끝났거나, 위험이 사라졌을 때 나타납니다. '기쁨'보다는 '평온'에 가까운 낮은 에너지를 동반합니다.",
+      potential: "스트레스를 해소하고 '감정 통제' 상태를 회복시킵니다. 이 상태가 지속되면 '만족'이나 '평온'으로 이어집니다.",
+      related_cells: ['만족', '흐뭇함', '긴장'] },
+    { name: '기대', eng_name: 'Anticipation', vitality: 7, empathy: 6, self_assurance: 7, relationship_stability: 6, emotion_control: 6, life_meaning: 8,
+      definition: "미래의 긍정적인 결과를 바라며 기다리는 감정입니다.",
+      manifestation: "설렘과 약간의 '긴장'을 동반합니다. 미래에 대한 긍정적인 상상을 하며, 현재의 '활력'이 되기도 합니다.",
+      potential: "목표 지향적인 행동을 촉진합니다. 기대가 충족되면 '기쁨'이나 '희열'로, 좌절되면 '실망'이나 '서운'함으로 발전할 수 있습니다.",
+      related_cells: ['들뜸', '조급', '희열'] },
+    { name: '흐뭇함', eng_name: 'Contentment', vitality: 6, empathy: 8, self_assurance: 7, relationship_stability: 9, emotion_control: 8, life_meaning: 8,
+      definition: "마음에 흡족하여 기분이 좋은 상태로, 주로 타인이나 관계 속에서 느껴집니다.",
+      manifestation: "타인의 긍정적인 모습을 보거나, '애정'을 느낄 때 잔잔한 미소와 함께 나타납니다. '자부심'보다 부드럽고 '공감'과 맞닿아 있습니다.",
+      potential: "'애정'이나 '공감'의 감정을 더욱 깊게 만듭니다. 타인에 대한 긍정적인 피드백을 통해 관계를 강화시킬 수 있습니다.",
+      related_cells: ['애정', '만족', '공감'] },
+    { name: '애정', eng_name: 'Affection', vitality: 7, empathy: 9, self_assurance: 7, relationship_stability: 10, emotion_control: 8, life_meaning: 8,
+      definition: "대상을 몹시 아끼고 귀중하게 여기는 마음입니다.",
+      manifestation: "타인과의 '관계 안정'에서 오는 깊은 유대감으로 나타납니다. 상대를 보호하고 싶은 마음과 강한 '공감'을 동반합니다.",
+      potential: "'흐뭇함'과 '기쁨'의 원천이 됩니다. 이 감정은 삶의 의미를 부여하지만, 때로 '질투'나 '배신'감의 원인이 되기도 합니다.",
+      related_cells: ['흐뭇함', '공감', '질투'] },
+    { name: '공감', eng_name: 'Empathy', vitality: 6, empathy: 10, self_assurance: 6, relationship_stability: 8, emotion_control: 7, life_meaning: 7,
+      definition: "타인의 감정이나 경험을 자신도 동일하게 느끼는 능력입니다.",
+      manifestation: "타인의 기쁨이나 슬픔에 깊이 이입하며, '관계 안정'의 기반이 됩니다. 높은 '공감'은 때로 감정적 소모를 유발할 수 있습니다.",
+      potential: "'애정'이나 '서운함' 등 관계 중심적 감정으로 발전합니다. 타인과의 경계를 설정하여 스스로를 보호하는 '감정 통제'가 필요할 수 있습니다.",
+      related_cells: ['애정', '슬픔', '서운'] },
+    { name: '활기', eng_name: 'Vigor', vitality: 9, empathy: 6, self_assurance: 7, relationship_stability: 6, emotion_control: 7, life_meaning: 7,
+      definition: "신체적, 정신적으로 생동감이 넘치는 상태입니다.",
+      manifestation: "높은 '활력' 점수에서 나타나며, 새로운 일을 '시작할 힘'이 넘칩니다. 긍정적인 태도와 높은 집중력을 보입니다.",
+      potential: "'들뜸'이나 '기쁨'으로 이어지기 좋은 상태입니다. 이 에너지를 구체적인 '기대'나 목표에 사용하면 '성취감'을 얻을 수 있습니다.",
+      related_cells: ['들뜸', '기대', '기쁨'] },
+    { name: '들뜸', eng_name: 'Excitement', vitality: 10, empathy: 6, self_assurance: 6, relationship_stability: 7, emotion_control: 5, life_meaning: 7,
+      definition: "기대나 흥분으로 마음이 가라앉지 않고 부풀어 오른 상태입니다.",
+      manifestation: "매우 높은 '활력'과 다소 낮은 '감정 통제' 상태에서 나타납니다. 안절부절못하거나, 집중력이 분산되는 경향이 있습니다.",
+      potential: "긍정적인 이벤트가 발생하면 '희열'로 이어질 수 있으나, 쉽게 '조급'함으로 변질되거나 에너지가 방전되어 '허무'를 느낄 수 있습니다.",
+      related_cells: ['희열', '기대', '조급'] },
+    { name: '슬픔', eng_name: 'Sorrow', vitality: 3, empathy: 7, self_assurance: 4, relationship_stability: 5, emotion_control: 3, life_meaning: 3,
+      definition: "상실, 좌절, 또는 불행으로 인해 마음이 아프고 무거운 상태입니다.",
+      manifestation: "낮은 '활력'과 낮은 '삶의 의미감'으로 나타납니다. 눈물이 나거나, 혼자 있고 싶어하며, 타인의 '공감'을 필요로 하기도 합니다.",
+      potential: "감정을 충분히 느끼고 해소하는 과정이 필요합니다. 억압되면 '무기력'이나 '공허'로 발전할 수 있습니다. '공감'을 통해 타인과 유대감을 형성할 수도 있습니다.",
+      related_cells: ['외로움', '자책', '공감'] },
+    { name: '허무', eng_name: 'Nihility', vitality: 2, empathy: 4, self_assurance: 3, relationship_stability: 3, emotion_control: 2, life_meaning: 1,
+      definition: "모든 것이 무의미하고 헛되게 느껴지는 감정입니다.",
+      manifestation: "극도로 낮은 '삶의 의미감'과 '활력'이 특징입니다. 어떤 일에도 동기를 느끼지 못하며, '냉소'적인 태도를 보일 수 있습니다.",
+      potential: "'공허'와 '무기력'의 가장 깊은 형태입니다. 스스로의 가치를 재발견하거나, 새로운 '삶의 의미'를 찾는 노력이 필요합니다.",
+      related_cells: ['공허', '무기력', '냉소'] },
+    { name: '서운', eng_name: 'Disappointment', vitality: 4, empathy: 6, self_assurance: 4, relationship_stability: 3, emotion_control: 4, life_meaning: 4,
+      definition: "기대에 못 미치는 대우를 받아 마음이 섭섭하고 아쉬운 감정입니다.",
+      manifestation: "주로 '관계 안정'이 흔들렸을 때 나타납니다. 타인에게 섭섭함을 표현하거나, 혼자 '위축'될 수 있습니다.",
+      potential: "관계에 대한 '기대'가 있었음을 의미합니다. 방치되면 '불신'이나 '외로움'으로, 해소되면 '관계 안정'을 회복할 수 있습니다.",
+      related_cells: ['억울', '외로움', '불신'] },
+    { name: '자책', eng_name: 'Self-blame', vitality: 3, empathy: 5, self_assurance: 1, relationship_stability: 4, emotion_control: 4, life_meaning: 2,
+      definition: "자신의 잘못이나 부족함을 스스로 탓하며 괴로워하는 감정입니다.",
+      manifestation: "극도로 낮은 '자기 확신' 점수에서 나타납니다. 과거의 행동을 반복적으로 후회하며, '죄책감'과 '위축'을 동반합니다.",
+      potential: "낮은 '자기 확신'을 더욱 악화시킵니다. 스스로를 용서하고, 실패를 배움의 과정으로 받아들이는 태도 전환이 필요합니다.",
+      related_cells: ['죄책감', '위축', '슬픔'] },
+    { name: '외로움', eng_name: 'Loneliness', vitality: 3, empathy: 5, self_assurance: 4, relationship_stability: 2, emotion_control: 3, life_meaning: 3,
+      definition: "타인과 의미 있는 관계를 맺지 못하고 홀로 격리되었다고 느끼는 감정입니다.",
+      manifestation: "낮은 '관계 안정' 점수와 '활력' 저하로 나타납니다. 타인과 연결되고 싶은 욕구와 동시에 '위축'되는 모습을 보입니다.",
+      potential: "'공감' 능력을 바탕으로 새로운 관계를 맺거나, 기존 관계를 개선하려는 노력이 필요합니다. 방치되면 '공허'나 '무기력'으로 이어질 수 있습니다.",
+      related_cells: ['슬픔', '공허', '위축'] },
+    { name: '억울', eng_name: 'Unfairness', vitality: 5, empathy: 4, self_assurance: 3, relationship_stability: 2, emotion_control: 2, life_meaning: 3,
+      definition: "부당한 대우를 받거나 오해를 받아 마음이 답답하고 분한 감정입니다.",
+      manifestation: "낮은 '자기 확신'과 '관계 안정' 속에서 '분개' 직전의 에너지를 가집니다. 자신의 무고함을 증명하고 싶어 합니다.",
+      potential: "적극적으로 해명하거나 상황을 바로잡으려 노력하면 '자부심'을 회복할 수 있습니다. 억압되면 '분개'나 '무기력'으로 변질될 수 있습니다.",
+      related_cells: ['분개', '답답', '서운'] },
+    { name: '분개', eng_name: 'Indignation', vitality: 8, empathy: 2, self_assurance: 4, relationship_stability: 1, emotion_control: 1, life_meaning: 2,
+      definition: "매우 부당한 일을 겪어 격렬하게 화가 나는 감정입니다.",
+      manifestation: "매우 높은 '활력', 낮은 '공감' 및 '감정 통제', 극도로 낮은 '관계 안정'이 특징입니다. 공격적인 태도나 강한 비난으로 표출될 수 있습니다.",
+      potential: "파괴적인 행동으로 이어질 수 있어 즉각적인 '감정 통제' 노력이 필요합니다. 이 에너지를 문제 해결을 위한 '활력'으로 전환할 수 있습니다.",
+      related_cells: ['억울', '배신', '질투'] },
+    { name: '질투', eng_name: 'Jealousy', vitality: 6, empathy: 3, self_assurance: 2, relationship_stability: 1, emotion_control: 2, life_meaning: 3,
+      definition: "타인이 가진 것을 부러워하거나, 자신이 소중히 여기는 관계를 잃을까 두려워하는 감정입니다.",
+      manifestation: "낮은 '자기 확신'과 '관계 안정'이 핵심입니다. 타인과 자신을 비교하며, '불신'이나 '냉소'적인 태도를 보일 수 있습니다.",
+      potential: "자신이 무엇을 원하는지(낮은 '자기 확신'의 원인) 파악하는 계기가 될 수 있습니다. '자부심'을 키우는 활동이 필요합니다.",
+      related_cells: ['배신', '불신', '자책'] },
+    { name: '무시', eng_name: 'Ignored', vitality: 4, empathy: 1, self_assurance: 3, relationship_stability: 1, emotion_control: 3, life_meaning: 2,
+      definition: "타인에게 가치 없거나 하찮게 여겨진다고 느끼는 감정입니다.",
+      manifestation: "극도로 낮은 '공감'(타인이 나에게 공감하지 않음)과 '관계 안정'이 특징입니다. '위축'되거나 반대로 '분개'할 수 있습니다.",
+      potential: "'자부심'을 훼손하며, '냉소'나 '외로움'을 유발합니다. 자신의 가치를 스스로 인정하는 '자기 확신' 회복이 중요합니다.",
+      related_cells: ['위축', '냉소', '분개'] },
+    { name: '답답', eng_name: 'Frustration', vitality: 4, empathy: 5, self_assurance: 4, relationship_stability: 4, emotion_control: 3, life_meaning: 3,
+      definition: "일이 뜻대로 되지 않거나, 마음이 풀리지 않아 갑갑한 상태입니다.",
+      manifestation: "중간 정도의 부정적 감정들이 복합적으로 작용합니다. '조급'함과 '긴장'의 전조 증상일 수 있습니다.",
+      potential: "문제의 원인을 명확히 파악하려는 노력이 '조급'함이나 '긴장'을 예방할 수 있습니다. 방치되면 '무기력'으로 이어질 수 있습니다.",
+      related_cells: ['조급', '긴장', '억울'] },
+    { name: '조급', eng_name: 'Impatience', vitality: 7, empathy: 4, self_assurance: 5, relationship_stability: 5, emotion_control: 1, life_meaning: 4,
+      definition: "마음이 급하여 안절부절못하는 상태입니다.",
+      manifestation: "극도로 낮은 '감정 통제'와 높은 '활력'이 특징입니다. 침착하지 못하고, 실수나 성급한 결정을 내리기 쉽습니다.",
+      potential: "상황을 통제하려는 욕구에서 비롯됩니다. '안도' 상태를 목표로, 호흡을 가다듬고 우선순위를 정하는 것이 도움이 됩니다.",
+      related_cells: ['긴장', '들뜸', '불신'] },
+    { name: '불신', eng_name: 'Distrust', vitality: 5, empathy: 3, self_assurance: 4, relationship_stability: 1, emotion_control: 4, life_meaning: 3,
+      definition: "타인이나 상황을 믿지 못하고 의심하는 감정입니다.",
+      manifestation: "극도로 낮은 '관계 안정'이 특징입니다. 타인의 의도를 의심하거나, 방어적인 태도를 취하며 '긴장' 상태를 유지합니다.",
+      potential: "'배신'의 경험에서 비롯될 수 있으며, '냉소'나 '외로움'을 강화합니다. 관계에서 '안도'감을 회복하는 것이 중요합니다.",
+      related_cells: ['배신', '긴장', '냉소'] },
+    { name: '위축', eng_name: 'Intimidation', vitality: 2, empathy: 5, self_assurance: 2, relationship_stability: 3, emotion_control: 2, life_meaning: 2,
+      definition: "자신감이 없어 기를 펴지 못하고 움츠러드는 상태입니다.",
+      manifestation: "낮은 '활력'과 '자기 확신'이 특징입니다. 타인의 시선을 의식하고, 자신의 의견을 표현하기 어려워하며 '외로움'을 느낍니다.",
+      potential: "'자책'과 '무시'당한 경험이 원인일 수 있습니다. 작은 성공(높은 '자기 확신')을 통해 '자부심'을 회복하는 것이 필요합니다.",
+      related_cells: ['자책', '외로움', '무시'] },
+    { name: '죄책감', eng_name: 'Guilt', vitality: 3, empathy: 6, self_assurance: 1, relationship_stability: 4, emotion_control: 4, life_meaning: 2,
+      definition: "스스로의 행동이 도덕적, 윤리적 기준에 어긋났다고 느껴 괴로워하는 감정입니다.",
+      manifestation: "극도로 낮은 '자기 확신'과 높은 '공감'(피해자에 대한) 능력에서 비롯됩니다. '자책'과 유사하나 타인에 대한 미안함이 더 큽니다.",
+      potential: "사과나 보상 행동을 통해 '관계 안정'을 회복하려는 시도로 이어질 수 있습니다. 용서를 통해 '안도'감으로 나아갈 수 있습니다.",
+      related_cells: ['자책', '서운', '공감'] },
+    { name: '배신', eng_name: 'Betrayal', vitality: 6, empathy: 2, self_assurance: 3, relationship_stability: 1, emotion_control: 2, life_meaning: 2,
+      definition: "믿었던 사람이나 관계로부터 신뢰가 깨졌을 때 느끼는 강한 부정적 감정입니다.",
+      manifestation: "극도로 낮은 '관계 안정'과 높은 '활력'(분노 에너지)이 특징입니다. '분개'나 '억울'함을 동반합니다.",
+      potential: "강한 '불신'과 '냉소'를 유발합니다. 이 경험을 통해 관계의 의미를 재정립하고, '자기 확신'을 회복하는 과정이 필요합니다.",
+      related_cells: ['분개', '불신', '억울'] },
+    { name: '무기력', eng_name: 'Lethargy', vitality: 1, empathy: 3, self_assurance: 2, relationship_stability: 3, emotion_control: 2, life_meaning: 1,
+      definition: "에너지와 동기를 완전히 상실하여 아무것도 하고 싶지 않은 상태입니다.",
+      manifestation: "모든 6개 축의 점수가 전반적으로 매우 낮습니다. 어떤 것에도 의미를 찾지 못하고, 신체적, 정신적 침체를 겪습니다.",
+      potential: "'허무'나 '공허'의 구체적인 발현입니다. 외부의 개입이나 환경의 변화, 혹은 아주 작은 '활력'을 찾는 것이 시급합니다.",
+      related_cells: ['허무', '공허', '자책'] },
+    { name: '공허', eng_name: 'Emptiness', vitality: 2, empathy: 3, self_assurance: 3, relationship_stability: 2, emotion_control: 2, life_meaning: 1,
+      definition: "마음 속이 텅 비어 아무것도 없는 듯한 느낌입니다.",
+      manifestation: "극도로 낮은 '삶의 의미감'과 '외로움'(낮은 관계 안정)에서 비롯됩니다. '허무'와 유사하나, 관계에 대한 결핍감이 더 큽니다.",
+      potential: "'무기력' 상태를 유발합니다. 새로운 '삶의 의미'를 찾거나, 타인과 '공감'대를 형성하는 것이 회복에 도움이 될 수 있습니다.",
+      related_cells: ['허무', '무기력', '외로움'] },
+    { name: '냉소', eng_name: 'Cynicism', vitality: 5, empathy: 2, self_assurance: 5, relationship_stability: 3, emotion_control: 6, life_meaning: 2,
+      definition: "타인이나 세상을 불신하고 경멸하며 비웃는 태도입니다.",
+      manifestation: "낮은 '공감' 능력과 낮은 '삶의 의미감'이 특징입니다. '자기 확신'은 어느 정도 있으나, '관계 안정'은 낮습니다.",
+      potential: "'배신'이나 '무시'당한 경험이 누적되어 방어기제로 작용할 수 있습니다. '공감' 능력을 회복하고 '삶의 의미'를 재설정할 필요가 있습니다.",
+      related_cells: ['불신', '무시', '허무'] },
+    { name: '긴장', eng_name: 'Tension', vitality: 7, empathy: 5, self_assurance: 5, relationship_stability: 4, emotion_control: 3, life_meaning: 4,
+      definition: "중요한 일이나 불확실한 상황을 앞두고 마음을 놓지 못하는 상태입니다.",
+      manifestation: "높은 '활력'(각성)과 낮은 '감정 통제'가 특징입니다. '조급'함과 유사하나, '삶의 의미감'(중요도)이 더 높게 작용합니다.",
+      potential: "문제를 해결하기 위한 에너지원이 될 수 있습니다. 성공적으로 해결되면 '안도'나 '희열'로, 실패하면 '좌절'이나 '자책'으로 이어집니다.",
+      related_cells: ['조급', '기대', '안도'] },
+];
 
-// --- HTML 템플릿 ---
+// --- HTML 템플릿 (전체) ---
 const surveyHTML = `
-    <div class="visualization-container" id="survey-viz-container">
-        <div class="viz-header">[ LIVE CELL VISUALIZER ]</div>
-    </div>
-    <div class="page-container protocol-page"> 
-        <div class="container-header">
-            <span>[ FILE: GUEST_ANALYSIS.LOG ]</span>
-            <span id="progress-text"></span> 
+    <div class="protocol-page" id="survey-page-container">
+        <div class="content-wrapper">
+            <div class="container-header">
+                <span>[ FILE: GUEST_ANALYSIS.LOG ]</span>
+                <span id="progress-text"></span> 
+            </div>
+            <div id="progress-bar-container"><div id="progress-indicator"></div></div>
+            <div class="navigation-buttons">
+                <button type="button" id="prev-question" class="nav-button">&lt;</button>
+                <button type="button" id="next-question" class="nav-button">&gt;</button>
+            </div>
+            <form id="protocol-form">
+                <div class="question-step" id="q1"> <h2 class="main-question">"요즘 나는 무언가를 시작할 힘이 난다."</h2> <p class="sub-text">* 현재 '활기'의 정도를 측정합니다. (활기 ↔ 무기력)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q1_vitality" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q1_vitality" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q1_vitality" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q1_vitality" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q1_vitality" data-value="5">매우 그렇다</button> </div> </div> <div class="question-step" id="q2"> <h2 class="main-question">"타인의 감정이나 생각에 쉽게 공감한다."</h2> <p class="sub-text">* 현재 '공감'의 정도를 측정합니다. (공감 ↔ 무시)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q2_empathy" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q2_empathy" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q2_empathy" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q2_empathy" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q2_empathy" data-value="5">매우 그렇다</button> </div> </div> <div class="question-step" id="q3"> <h2 class="main-question">"나는 내 선택과 행동에 만족한다."</h2> <p class="sub-text">* 현재 '자기 확신'의 정도를 측정합니다. (자부심 ↔ 자책)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q3_self_assurance" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q3_self_assurance" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q3_self_assurance" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q3_self_assurance" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q3_self_assurance" data-value="5">매우 그렇다</button> </div> </div> <div class="question-step" id="q4"> <h2 class="main-question">"사람들과의 관계가 나를 편안하게 만든다."</h2> <p class="sub-text">* 현재 '관계 안정'의 정도를 측정합니다. (애정/안도 ↔ 배신/불신)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q4_relationship_stability" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q4_relationship_stability" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q4_relationship_stability" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q4_relationship_stability" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q4_relationship_stability" data-value="5">매우 그렇다</button> </div> </div> <div class="question-step" id="q5"> <h2 class="main-question">"감정이 쉽게 요동치지 않고, 스스로 조절할 수 있다."</h2> <p class="sub-text">* 현재 '감정 통제'의 정도를 측정합니다. (안도 ↔ 조급/긴장)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q5_emotion_control" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q5_emotion_control" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q5_emotion_control" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q5_emotion_control" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q5_emotion_control" data-value="5">매우 그렇다</button> </div> </div> <div class="question-step" id="q6"> <h2 class="main-question">"요즘 내 삶이 의미 있고 가치 있다고 느낀다."</h2> <p class="sub-text">* 현재 '삶의 의미감'의 정도를 측정합니다. (희열/기대 ↔ 허무/공허/냉소)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q6_life_meaning" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q6_life_meaning" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q6_life_meaning" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q6_life_meaning" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q6_life_meaning" data-value="5">매우 그렇다</button> </div> </div>
+            </form>
         </div>
-        <div id="progress-bar-container"><div id="progress-indicator"></div></div>
-        <form id="protocol-form">
-            <div class="question-step" id="q1"> <h2 class="main-question">"요즘 나는 무언가를 시작할 힘이 난다."</h2> <p class="sub-text">// 현재 '활기'의 정도를 측정합니다. (활기 ↔ 무기력)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q1_vitality" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q1_vitality" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q1_vitality" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q1_vitality" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q1_vitality" data-value="5">매우 그렇다</button> </div> </div> <div class="question-step" id="q2"> <h2 class="main-question">"타인의 감정이나 생각에 쉽게 공감한다."</h2> <p class="sub-text">// 현재 '공감'의 정도를 측정합니다. (공감 ↔ 무시)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q2_empathy" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q2_empathy" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q2_empathy" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q2_empathy" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q2_empathy" data-value="5">매우 그렇다</button> </div> </div> <div class="question-step" id="q3"> <h2 class="main-question">"나는 내 선택과 행동에 만족한다."</h2> <p class="sub-text">// 현재 '자기 확신'의 정도를 측정합니다. (자부심 ↔ 자책)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q3_self_assurance" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q3_self_assurance" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q3_self_assurance" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q3_self_assurance" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q3_self_assurance" data-value="5">매우 그렇다</button> </div> </div> <div class="question-step" id="q4"> <h2 class="main-question">"사람들과의 관계가 나를 편안하게 만든다."</h2> <p class="sub-text">// 현재 '관계 안정'의 정도를 측정합니다. (애정/안도 ↔ 배신/불신)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q4_relationship_stability" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q4_relationship_stability" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q4_relationship_stability" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q4_relationship_stability" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q4_relationship_stability" data-value="5">매우 그렇다</button> </div> </div> <div class="question-step" id="q5"> <h2 class="main-question">"감정이 쉽게 요동치지 않고, 스스로 조절할 수 있다."</h2> <p class="sub-text">// 현재 '감정 통제'의 정도를 측정합니다. (안도 ↔ 조급/긴장)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q5_emotion_control" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q5_emotion_control" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q5_emotion_control" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q5_emotion_control" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q5_emotion_control" data-value="5">매우 그렇다</button> </div> </div> <div class="question-step" id="q6"> <h2 class="main-question">"요즘 내 삶이 의미 있고 가치 있다고 느낀다."</h2> <p class="sub-text">// 현재 '삶의 의미감'의 정도를 측정합니다. (희열/기대 ↔ 허무/공허/냉소)</p> <div class="choices button-choices-scale"> <button type="button" class="choice-button" data-question="q6_life_meaning" data-value="1">매우 아니다</button> <button type="button" class="choice-button" data-question="q6_life_meaning" data-value="2">아니다</button> <button type="button" class="choice-button" data-question="q6_life_meaning" data-value="3">보통</button> <button type="button" class="choice-button" data-question="q6_life_meaning" data-value="4">그렇다</button> <button type="button" class="choice-button" data-question="q6_life_meaning" data-value="5">매우 그렇다</button> </div> </div>
-        </form>
     </div>
 `;
 const sensitivityHTML = `
-    <div class="visualization-container" id="sensitivity-viz-container">
-        <div class="viz-header">[ SENSITIVITY CALIBRATION ]</div>
-    </div>
-    <div class="page-container protocol-page culturing-page">
-        <div class="container-header"><span>[ FILE: CELL_SENSITIVITY.LOG ]</span></div>
-        <h2 id="step3-title">[ 민감도 설정 ]</h2>
-        <p class="sub-text" style="text-align: center;">// 세포의 최종 반응성을 조절합니다. 외부 자극에 대한 불안정성을 결정합니다.</p>
-        <div class="slider-wrapper">
-            <span class="slider-label">둔감</span>
-            <input type="range" id="sensitivity-slider" min="0" max="100" value="50">
-            <span class="slider-label">민감</span>
+    <div class="culturing-page" id="sensitivity-page-container">
+        <div class="content-wrapper">
+            <div class="container-header"><span>[ FILE: CELL_SENSITIVITY.LOG ]</span></div>
+            <h2 id="step3-title">[ 민감도 설정 ]</h2>
+            <p class="sub-text" style="text-align: center;">* 세포의 최종 반응성을 조절합니다. 외부 자극에 대한 불안정성을 결정합니다.</p>
+            <div class="slider-wrapper">
+                <span class="slider-label">둔감</span>
+                <input type="range" id="sensitivity-slider" min="0" max="100" value="50">
+                <span class="slider-label">민감</span>
+            </div>
+            <button id="inject-button">
+                <div id="inject-progress-fill"></div>
+                <span id="inject-text">[ 주입 ]</span>
+            </button>
         </div>
-        <button id="inject-button">
-            <div id="inject-progress-fill"></div>
-            <span id="inject-text">[ 주입 ]</span>
-        </button>
     </div>
 `;
 const resultHTML = `
     <div class="page-container result-page" id="result-page-container"> 
-        <div class="container-header">
-            <span>[ FILE: ECA_CELL_CULTURE.LOG ]</span>
-            <span id="result-id-display"></span>
+        <div class="container-header"><span>[ FILE: ECA_CELL_CULTURE.LOG ]</span><span id="result-id-display"></span></div>
+        <h2 class="result-title">배양된 감정세포:</h2>
+        <h1 id="result-cell-name-display"></h1>
+        <div class="result-content">
+            <div class="chart-container"><canvas id="result-chart"></canvas></div>
+            <div id="result-analysis-data"></div>
+            <div id="result-cell-info"></div>
         </div>
-        <h2 class="result-title">감정세포 배양 완료</h2>
-        <div class="result-wrapper">
-            <div class="result-panel" id="result-left-panel">
-                <div class="chart-container"><canvas id="result-chart"></canvas></div>
-                <div id="result-cell-info"></div>
-            </div>
-        </div>
-        <p class="final-message">// 이 감정세포는 당신의 현재 심리 상태를 반영합니다.</p>
-        <button id="restart-button">[ 다시 측정하기 ]</button>
+        <p class="final-message">* 이 감정세포는 당신의 현재 심리 상태를 반영합니다.</p>
+        <div class="result-buttons"><button id="restart-button">[ 다시 측정하기 ]</button><button id="print-button">[ 영수증 출력하기 ]</button></div>
     </div>
 `;
 
-// --- 초기화 함수 ---
-function initContent() {
-    document.getElementById('step2-protocol').innerHTML = surveyHTML;
-    document.getElementById('step3-culturing').innerHTML = sensitivityHTML;
-    document.getElementById('step4-result').innerHTML = resultHTML;
-}
+function initContent() { document.getElementById('step2-protocol').innerHTML = surveyHTML; document.getElementById('step3-culturing').innerHTML = sensitivityHTML; document.getElementById('step4-result').innerHTML = resultHTML; }
 initContent();
-
-// --- 동적으로 생성된 DOM 요소 다시 찾기 ---
-let progressBar, choiceButtons, progressText, sensitivitySlider, injectButton, injectProgressFill, injectText, resultIdDisplay, resultCellInfo, chartCanvas;
-function rebindDOM() {
-    progressBar = document.getElementById('progress-indicator');
-    choiceButtons = document.querySelectorAll('.choice-button');
-    progressText = document.getElementById('progress-text');
-    sensitivitySlider = document.getElementById('sensitivity-slider');
-    injectButton = document.getElementById('inject-button');
-    injectProgressFill = document.getElementById('inject-progress-fill');
-    injectText = document.getElementById('inject-text');
-    resultIdDisplay = document.getElementById('result-id-display');
-    resultCellInfo = document.getElementById('result-cell-info');
-    chartCanvas = document.getElementById('result-chart');
-    
-    choiceButtons.forEach(button => {
-        button.addEventListener('click', (e) => nextStep(e.currentTarget.dataset.question, e.currentTarget.dataset.value));
-    });
-    injectButton.addEventListener('click', handleInjection);
-    document.getElementById('restart-button').addEventListener('click', () => location.reload());
+let progressBar, choiceButtons, progressText, sensitivitySlider, injectButton, injectProgressFill, injectText, resultIdDisplay, resultCellInfo, chartCanvas, resultCellNameDisplay, resultAnalysisData;
+function rebindDOM() { progressBar = document.getElementById('progress-indicator'); choiceButtons = document.querySelectorAll('.choice-button'); progressText = document.getElementById('progress-text'); sensitivitySlider = document.getElementById('sensitivity-slider'); injectButton = document.getElementById('inject-button'); injectProgressFill = document.getElementById('inject-progress-fill'); injectText = document.getElementById('inject-text'); resultIdDisplay = document.getElementById('result-id-display'); resultCellInfo = document.getElementById('result-cell-info'); chartCanvas = document.getElementById('result-chart'); resultCellNameDisplay = document.getElementById('result-cell-name-display'); resultAnalysisData = document.getElementById('result-analysis-data'); if (choiceButtons) { choiceButtons.forEach(button => { button.addEventListener('click', (e) => nextStep(e.currentTarget.dataset.question, e.currentTarget.dataset.value)); }); } if (injectButton) { injectButton.addEventListener('click', handleInjection); } const restartButton = document.getElementById('restart-button'); if (restartButton) { restartButton.addEventListener('click', () => location.reload()); } const printButton = document.getElementById('print-button'); if (printButton) { printButton.addEventListener('click', handlePrint); } 
+    const prevBtn = document.getElementById('prev-question');
+    const nextBtn = document.getElementById('next-question');
+    if (prevBtn) prevBtn.addEventListener('click', goToPrevQuestion);
+    if (nextBtn) nextBtn.addEventListener('click', goToNextQuestion);
 }
-
-// --- 로직 함수 ---
 function typeEffect(element, text, delay, callback) { let i = 0; element.innerHTML = ""; function typing() { if (i < text.length) { element.innerHTML += text.charAt(i); i++; setTimeout(typing, delay); } else if (callback) { callback(); } } typing(); }
-
-function handleAccess() {
-    const guestID = guestInput.value;
-    if (guestID && /^[a-zA-Z]+$/.test(guestID)) {
-        userAnswers['accessID'] = guestID.toUpperCase(); 
-        accessButton.disabled = true;
-        typeEffect(terminalOutput, "ACCESSING E.C.A. ARCHIVE...", 50, () => {
-            setTimeout(() => {
-                typeEffect(terminalOutput, `ACCESSING E.C.A. ARCHIVE...\nIDENTITY VERIFIED: ${userAnswers['accessID']}\n\n[ 감정세포 배양 프로토콜을 시작합니다. ]`, 50, () => {
-                    setTimeout(() => { 
-                        step1.style.display = 'none'; 
-                        mainContainer.style.display = 'flex';
-                        activatePanel(document.getElementById('panel-survey'));
-                    }, 1000);
-                });
-            }, 800);
-        });
-    } else { typeEffect(terminalOutput, "ERROR: ACCESS ID는 영문으로만 입력해야 합니다.", 50, null); }
-}
+function handleAccess() { const guestID = guestInput.value; if (guestID && /^[a-zA-Z]+$/.test(guestID)) { userAnswers['accessID'] = guestID.toUpperCase(); accessButton.disabled = true; typeEffect(terminalOutput, "ACCESSING E.C.A. ARCHIVE...", 50, () => { setTimeout(() => { typeEffect(terminalOutput, `ACCESSING E.C.A. ARCHIVE...\nIDENTITY VERIFIED: ${userAnswers['accessID']}\n\n[ 감정세포 배양 프로토콜을 시작합니다. ]`, 50, () => { setTimeout(() => { step1.style.display = 'none'; mainContainer.style.display = 'flex'; body.classList.add('main-active'); activatePanel(document.getElementById('panel-survey')); }, 1000); }); }, 800); }); } else { typeEffect(terminalOutput, "ERROR: ACCESS ID는 영문으로만 입력해야 합니다.", 50, null); } }
 
 function showQuestion(qNum) {
     document.querySelectorAll('.question-step').forEach(q => q.style.display = 'none');
     const qEl = document.getElementById('q' + qNum);
     if (qEl) qEl.style.display = 'block';
-    if(progressBar) progressBar.style.width = (qNum / totalQuestions) * 100 + '%';
+
+    const answeredCount = Object.keys(userAnswers).filter(k => k.startsWith('q')).length;
+    if(progressBar) progressBar.style.width = (answeredCount / totalQuestions) * 100 + '%';
+    
     if(progressText) progressText.textContent = `[ ${qNum} / ${totalQuestions} ]`;
+
+    const prevBtn = document.getElementById('prev-question');
+    const nextBtn = document.getElementById('next-question');
+    
+    if (prevBtn) prevBtn.disabled = (qNum <= 1);
+    if (nextBtn) nextBtn.disabled = (qNum >= totalQuestions);
+
+    const currentQKey = qEl.querySelector('.choice-button').dataset.question;
+    const buttons = qEl.querySelectorAll(`[data-question="${currentQKey}"]`);
+    
+    if (userAnswers[currentQKey]) {
+        buttons.forEach(btn => {
+            if (btn.dataset.value == userAnswers[currentQKey]) {
+                btn.style.backgroundColor = 'var(--border-focus)';
+                btn.style.color = 'var(--page-bg)';
+            } else {
+                btn.style.backgroundColor = 'var(--page-bg)';
+                btn.style.color = 'var(--main-text)';
+            }
+        });
+    } else {
+        buttons.forEach(btn => {
+            btn.style.backgroundColor = 'var(--page-bg)';
+            btn.style.color = 'var(--main-text)';
+        });
+    }
+}
+
+function goToPrevQuestion() {
+    if (currentQuestion > 1) {
+        currentQuestion--;
+        showQuestion(currentQuestion);
+    }
+}
+
+function goToNextQuestion() {
+    if (currentQuestion < totalQuestions) {
+        currentQuestion++;
+        showQuestion(currentQuestion);
+    }
 }
 
 function nextStep(questionName, value) {
     userAnswers[questionName] = parseInt(value);
-    visualizationState = Object.keys(userAnswers).length - 1;
-    currentQuestion++;
-    if (currentQuestion > totalQuestions) { 
-        setTimeout(() => activatePanel(document.getElementById('panel-sensitivity')), 300);
-    } else { 
-        showQuestion(currentQuestion); 
+    visualizationState = Object.keys(userAnswers).filter(k => k.startsWith('q')).length;
+
+    const buttons = document.querySelectorAll(`[data-question="${questionName}"]`);
+    buttons.forEach(btn => {
+        if (btn.dataset.value == value) {
+            btn.style.backgroundColor = 'var(--border-focus)';
+            btn.style.color = 'var(--page-bg)';
+        } else {
+            btn.style.backgroundColor = 'var(--page-bg)';
+            btn.style.color = 'var(--main-text)';
+        }
+    });
+
+    if(progressBar) progressBar.style.width = (visualizationState / totalQuestions) * 100 + '%';
+    
+    if (currentQuestion < totalQuestions) {
+        currentQuestion++;
+        showQuestion(currentQuestion);
+    } else {
+        activatePanel(document.getElementById('panel-sensitivity'));
     }
 }
 
-function handleInjection() {
-    sensitivitySlider.disabled = true; injectButton.disabled = true; injectButton.classList.add('injecting');
-    finalInstability = 5 + (sensitivitySlider.value / 100) * 30;
-    if(activeSketch) activeSketch.noLoop();
-    let progress = 0;
-    const progressInterval = setInterval(() => {
-        progress += 5;
-        if (progress >= 100) {
-            progress = 100; clearInterval(progressInterval);
-            injectText.textContent = "[ 주입 완료 ]"; injectProgressFill.style.width = '100%';
-            setTimeout(() => { 
-                calculateAndShowFinalResult();
-                activatePanel(document.getElementById('panel-result'));
-            }, 500);
-        }
-        injectProgressFill.style.width = progress + '%'; injectText.textContent = `[ 주입 중... ${progress}% ]`;
-    }, 50);
-}
-
-function calculateAndShowFinalResult() {
-    userScores = {
-        vitality: (userAnswers['q1_vitality'] - 1) * 2.25 + 1, empathy: (userAnswers['q2_empathy'] - 1) * 2.25 + 1,
-        self_assurance: (userAnswers['q3_self_assurance'] - 1) * 2.25 + 1, relationship_stability: (userAnswers['q4_relationship_stability'] - 1) * 2.25 + 1,
-        emotion_control: (userAnswers['q5_emotion_control'] - 1) * 2.25 + 1, life_meaning: (userAnswers['q6_life_meaning'] - 1) * 2.25 + 1
-    };
-    culturedCell = findClosestEmotion(userScores);
-}
-
-function findClosestEmotion(scores) {
-    let closestDist = Infinity, closestEmotion = null;
-    EMOTION_DATABASE.forEach(emotion => {
-        const dist = Math.sqrt(Object.keys(scores).reduce((sum, key) => sum + Math.pow(scores[key] - emotion[key], 2), 0));
-        if (dist < closestDist) { closestDist = dist; closestEmotion = emotion; }
-    });
-    return closestEmotion;
-}
-
-function showResult(cell, scores) {
-    if(!resultIdDisplay) return;
-    resultIdDisplay.textContent = `[ ID: ${userAnswers['accessID']} ]`;
-    resultCellInfo.innerHTML = `
-        <p><strong>배양된 감정세포:</strong> <span style="font-size: 1.2em; font-weight: bold;">${cell.name}</span></p>
-        <p><strong>[ 분석 데이터 (10점 만점) ]</strong></p>
-        <p><strong>활력:</strong> ${scores.vitality.toFixed(1)} &nbsp; <strong>공감:</strong> ${scores.empathy.toFixed(1)}</p>
-        <p><strong>자기 확신:</strong> ${scores.self_assurance.toFixed(1)} &nbsp; <strong>관계 안정:</strong> ${scores.relationship_stability.toFixed(1)}</p>
-        <p><strong>감정 통제:</strong> ${scores.emotion_control.toFixed(1)} &nbsp; <strong>삶의 의미감:</strong> ${scores.life_meaning.toFixed(1)}</p>`;
-    if (resultChart) resultChart.destroy();
-    resultChart = new Chart(chartCanvas, {
-        type: 'radar',
-        data: {
-            labels: ['활력', '공감', '자기 확신', '관계 안정', '감정 통제', '삶의 의미감'],
-            datasets: [{
-                label: `[ ${userAnswers['accessID']} ]`, data: Object.values(scores).map(s => parseFloat(s.toFixed(1))),
-                fill: true, backgroundColor: 'rgba(0, 0, 0, 0.05)', borderColor: 'rgba(0, 0, 0, 1)', pointBackgroundColor: 'rgba(0, 0, 0, 1)'
-            }, {
-                label: `'${cell.name}'`, data: Object.values(cell).slice(1),
-                fill: false, borderColor: 'rgba(150, 150, 150, 0.5)', pointBackgroundColor: 'rgba(150, 150, 150, 0.5)'
-            }]
-        },
-        options: { maintainAspectRatio: false, scales: { r: { suggestedMin: 0, suggestedMax: 10, ticks: { stepSize: 2, backdropColor: 'var(--page-bg)', color: 'var(--gray-mid)', font: { family: 'D2Coding' }}, pointLabels: { font: { family: 'D2Coding' }, color: 'var(--main-text)' }}}, plugins: { legend: { labels: { font: { family: 'D2Coding' }}}}}
-    });
-}
-
-function activatePanel(panel) {
-    if (activeSketch) { activeSketch.remove(); activeSketch = null; }
-
-    const panelId = panel.id.split('-')[1];
+function handleInjection() { sensitivitySlider.disabled = true; injectButton.disabled = true; injectButton.classList.add('injecting'); finalInstability = 5 + (sensitivitySlider.value / 100) * 30; if(activeSketch) activeSketch.noLoop(); let progress = 0; const progressInterval = setInterval(() => { progress += 5; if (progress >= 100) { progress = 100; clearInterval(progressInterval); injectText.textContent = "[ 주입 완료 ]"; injectProgressFill.style.width = '100%'; setTimeout(() => { calculateAndShowFinalResult(); activatePanel(document.getElementById('panel-result')); }, 500); } injectProgressFill.style.width = progress + '%'; injectText.textContent = `[ 주입 중... ${progress}% ]`; }, 50); }
+function calculateAndShowFinalResult() { userScores = { vitality: (userAnswers['q1_vitality'] - 1) * 2.25 + 1, empathy: (userAnswers['q2_empathy'] - 1) * 2.25 + 1, self_assurance: (userAnswers['q3_self_assurance'] - 1) * 2.25 + 1, relationship_stability: (userAnswers['q4_relationship_stability'] - 1) * 2.25 + 1, emotion_control: (userAnswers['q5_emotion_control'] - 1) * 2.25 + 1, life_meaning: (userAnswers['q6_life_meaning'] - 1) * 2.25 + 1 }; culturedCell = findClosestEmotion(userScores); }
+function findClosestEmotion(scores) { let closestDist = Infinity, closestEmotion = null; EMOTION_DATABASE.forEach(emotion => { const dist = Math.sqrt(Object.keys(scores).reduce((sum, key) => sum + Math.pow(scores[key] - emotion[key], 2), 0)); if (dist < closestDist) { closestDist = dist; closestEmotion = emotion; } }); return closestEmotion; }
+function showResult(cell, scores) { if(!resultIdDisplay) return; resultIdDisplay.textContent = `[ ID: ${userAnswers['accessID']} ]`; if(resultCellNameDisplay) {
+    // 1. 데이터베이스 배열에서 현재 세포의 순서(index)를 찾습니다.
+    const cellIndex = EMOTION_DATABASE.indexOf(cell);
     
-    body.className = `${panelId}-active`;
-    activePanelId = panel.id;
+    // 2. 순서에 1을 더하고, 3자리 숫자(예: '001', '021')로 만듭니다.
+    const label = `e-${(cellIndex + 1).toString().padStart(3, '0')}`;
     
-    contentBlocks.forEach(cb => cb.classList.remove('active'));
-    const targetContent = document.getElementById(`content-${panelId}`);
-    if(targetContent) targetContent.classList.add('active');
+    // 3. 영어 이름 뒤에 "Cell"을 붙입니다. (요청하신 문법 수정)
+    const engCellName = `${cell.eng_name} Cell`;
     
-    if (panelId === 'survey') {
-        // [수정] 스케치(애니메이션)를 항상 (재)생성합니다.
-        initStep2Sketch(); 
-        if (currentQuestion <= totalQuestions) { 
-            // 설문이 끝나지 않았을 때만 질문을 표시합니다.
-            showQuestion(currentQuestion);
-        }
-    } else if (panelId === 'sensitivity') {
-        initStep3Sketch();
-    } else if (panelId === 'result') {
-        if(culturedCell && userScores) {
-             showResult(culturedCell, userScores);
-             initStep4Sketch(); 
-        }
-    }
-}
+    // 4. 최종 형식으로 텍스트를 변경합니다.
+    resultCellNameDisplay.innerText = `${label} : ${cell.name} 세포 (${engCellName})`;
+} if(resultAnalysisData) { resultAnalysisData.innerHTML = `<h3 class="result-info-heading">[ 분석 데이터 (1-10 Scale) ]</h3><p><strong>활력 (Vitality):</strong> ${scores.vitality.toFixed(1)} 점</p><p><strong>공감 (Empathy):</strong> ${scores.empathy.toFixed(1)} 점</p><p><strong>자기 확신 (Self-Assurance):</strong> ${scores.self_assurance.toFixed(1)} 점</p><p><strong>관계 안정 (Relationship):</strong> ${scores.relationship_stability.toFixed(1)} 점</p><p><strong>감정 통제 (Control):</strong> ${scores.emotion_control.toFixed(1)} 점</p><p><strong>삶의 의미 (Meaning):</strong> ${scores.life_meaning.toFixed(1)} 점</p>`; } if(resultCellInfo) { resultCellInfo.innerHTML = `<h3 class="result-info-heading">[ 1. 정의 (Definition) ]</h3><p>${cell.definition}</p><h3 class="result-info-heading">[ 2. 발현 형태 (Manifestation) ]</h3><p>${cell.manifestation}</p><h3 class="result-info-heading">[ 3. 잠재적 발전 (Potential) ]</h3><p>${cell.potential}</p><h3 class="result-info-heading">[ 4. 관련 세포 (Related Cells) ]</h3><p>${cell.related_cells.join(', ')}</p>`; } if (resultChart) resultChart.destroy(); const labels = ['활력 (Vitality)', '공감 (Empathy)', '자기 확신 (Self-Assurance)', '관계 안정 (Relationship)', '감정 통제 (Control)', '삶의 의미 (Meaning)']; resultChart = new Chart(chartCanvas, { type: 'radar', data: { labels: labels, datasets: [{ label: `사용자 [ ${userAnswers['accessID']} ]`, data: Object.values(scores).map(s => parseFloat(s.toFixed(1))), fill: true, backgroundColor: 'rgba(0, 0, 0, 0.1)', borderColor: 'rgba(0, 0, 0, 1)', borderWidth: 1.5, pointBackgroundColor: 'rgba(0, 0, 0, 1)' }, { label: `참조 세포 [ ${cell.name} ]`, data: Object.values(cell).slice(1, 7), fill: true, backgroundColor: 'rgba(150, 150, 150, 0.05)', borderColor: 'rgba(150, 150, 150, 0.5)', borderWidth: 1, pointBackgroundColor: 'rgba(150, 150, 150, 0.5)' }] }, options: { maintainAspectRatio: false, animation: { duration: 0 }, scales: { r: { suggestedMin: 0, suggestedMax: 10, ticks: { stepSize: 2, backdropColor: 'var(--page-bg)', color: 'var(--gray-mid)' }, grid: { color: 'var(--border-color)' }, pointLabels: { font: { family: 'D2Coding', size: 11 }, color: 'var(--main-text)' } } }, plugins: { legend: { labels: { font: { family: 'D2Coding', size: 12 }, color: 'var(--main-text)' } } } } }); }
+async function handlePrint() { const p5Canvas = document.getElementById('p5-result-canvas'); const chartJSCanvas = document.getElementById('result-chart'); const printButton = document.getElementById('print-button'); if (!p5Canvas || !chartJSCanvas || !resultChart || !culturedCell || !printButton || !userScores || !userAnswers.accessID || !window.html2canvas) { console.error('인쇄에 필요한 요소가 준비되지 않았습니다.'); alert('인쇄 오류: 필수 요소를 찾을 수 없습니다.'); return; } printButton.disabled = true; printButton.textContent = '[ ...이미지 생성 중... ]'; const originalChartConfig = { bgColor: resultChart.data.datasets[0].backgroundColor, borderColor: resultChart.data.datasets[0].borderColor, pointColor: resultChart.data.datasets[0].pointBackgroundColor, compareBorderColor: resultChart.data.datasets[1].borderColor, comparePointColor: resultChart.data.datasets[1].pointBackgroundColor, ticksColor: resultChart.options.scales.r.ticks.color, gridColor: resultChart.options.scales.r.grid.color, pointLabelColor: resultChart.options.scales.r.pointLabels.color }; resultChart.data.datasets[0].backgroundColor = 'rgba(0, 0, 0, 0.1)'; resultChart.data.datasets[0].borderColor = '#000000'; resultChart.data.datasets[0].pointBackgroundColor = '#000000'; resultChart.data.datasets[1].borderColor = '#000000'; resultChart.data.datasets[1].pointBackgroundColor = '#000000'; resultChart.options.scales.r.ticks.color = '#000000'; resultChart.options.scales.r.grid.color = '#AAAAAA'; resultChart.options.scales.r.pointLabels.color = '#000000'; resultChart.update('none'); const chartImageData = resultChart.toBase64Image('image/png'); resultChart.data.datasets[0].backgroundColor = originalChartConfig.bgColor; resultChart.data.datasets[0].borderColor = originalChartConfig.borderColor; resultChart.data.datasets[0].pointBackgroundColor = originalChartConfig.pointColor; resultChart.data.datasets[1].borderColor = originalChartConfig.compareBorderColor; resultChart.data.datasets[1].pointBackgroundColor = originalChartConfig.comparePointColor; resultChart.options.scales.r.ticks.color = originalChartConfig.ticksColor; resultChart.options.scales.r.grid.color = originalChartConfig.gridColor; resultChart.options.scales.r.pointLabels.color = originalChartConfig.pointLabelColor; resultChart.update('none'); const p5ImageData = p5Canvas.toDataURL('image/png'); const receiptCSS = `<style>#print-container-temp { width: 174px; padding: 1mm; margin: 0; font-family: 'D2Coding', sans-serif; font-size: 9px; line-height: 1.3; color: #000; background: #fff; text-align: center; box-sizing: content-box; } #print-container-temp h2 { font-size: 11px; font-weight: bold; margin: 5px 0; } #print-container-temp h3 { font-size: 10px; font-weight: bold; margin-top: 8px; margin-bottom: 3px; text-align: left; } #print-container-temp p { font-size: 9px; text-align: left; margin: 4px 0; } #print-container-temp p.centered { text-align: center; } #print-container-temp img { display: block; width: 100%; max-width: 100%; margin: 5px auto; border: 1px solid #ccc; box-sizing: border-box; filter: grayscale(100%) brightness(0.7) contrast(200%); image-rendering: pixelated; }</style>`; const receiptBodyHTML = `<h2>[ E.C.A. 배양 결과 ]</h2><p><strong>Access ID:</strong> ${userAnswers.accessID}</p><p class="centered">--------------------</p><h3>1. 배양된 세포</h3><p><strong>세포 이름: ${culturedCell.name}</strong></p><img src="${p5ImageData}" alt="배양된 세포" /><p class="centered">--------------------</p><h3>2. 결과 그래프</h3><img src="${chartImageData}" alt="결과 그래프" /><p class="centered">--------------------</p><h3>3. 분석 데이터 (10.0 만점)</h3><p>활력: ${userScores.vitality.toFixed(1)}</p><p>공감: ${userScores.empathy.toFixed(1)}</p><p>자기 확신: ${userScores.self_assurance.toFixed(1)}</p><p>관계 안정: ${userScores.relationship_stability.toFixed(1)}</p><p>감정 통제: ${userScores.emotion_control.toFixed(1)}</p><p>삶의 의미감: ${userScores.life_meaning.toFixed(1)}</p><p class="centered">--------------------</p><p class="centered">E.C.A. 이용해 주셔서 감사합니다.</p>`; let printContainer = null; try { printContainer = document.createElement('div'); printContainer.id = "print-container-temp"; printContainer.style.position = "absolute"; printContainer.style.left = "-2000px"; printContainer.innerHTML = receiptCSS + receiptBodyHTML; document.body.appendChild(printContainer); const images = printContainer.querySelectorAll('img'); const imagePromises = []; images.forEach(img => { if (!img.complete) { imagePromises.push(new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; })); } }); await Promise.all(imagePromises); const canvas = await html2canvas(printContainer, { scale: 2, useCORS: true }); const finalImageData = canvas.toDataURL('image/png'); const link = document.createElement('a'); link.href = finalImageData; link.download = `세포영수증_${userAnswers.accessID || 'ECA'}.png`; document.body.appendChild(link); link.click(); document.body.removeChild(link); } catch (error) { console.error("html2canvas 이미지 생성/다운로드 실패:", error); alert("이미지 생성 실패: " + error.message); } finally { if (printContainer) { document.body.removeChild(printContainer); } setTimeout(() => { printButton.disabled = false; printButton.textContent = '[ 영수증 출력하기 ]'; }, 1000); } }
+function activatePanel(panel) { if (activeSketch) { activeSketch.remove(); activeSketch = null; } const panelId = panel.id.split('-')[1]; body.className = `main-active ${panelId}-active`; activePanelId = panel.id; contentBlocks.forEach(cb => cb.classList.remove('active')); const targetContent = document.getElementById(`content-${panelId}`); if(targetContent) targetContent.classList.add('active'); if (panelId === 'survey' || panelId === 'sensitivity' || panelId === 'result') { rebindDOM(); } if (panelId === 'survey') { initStep2Sketch(); if (currentQuestion <= totalQuestions) { showQuestion(currentQuestion); } } else if (panelId === 'sensitivity') { initStep3Sketch(); } else if (panelId === 'result') { if(culturedCell && userScores) { showResult(culturedCell, userScores); initStep4Sketch(); } } }
 
-accessButton.addEventListener('click', handleAccess);
-guestInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleAccess());
-panels.forEach(panel => {
-    panel.addEventListener('click', () => {
-        if (panel.id === 'panel-sensitivity' && currentQuestion <= totalQuestions) return;
-        if (panel.id === 'panel-result' && (!culturedCell || !userScores)) return;
-        if (panel.id !== activePanelId) activatePanel(panel);
-    });
-});
+// --- p5.js 그리기 헬퍼 ---
+function drawCellHelper(p, cx, cy, radius, instability, bodyColor, nucleusColor) { p.noStroke(); p.fill(bodyColor[0], bodyColor[1], bodyColor[2]); p.push(); p.translate(cx, cy); p.beginShape(); for (let a = 0; a < p.TWO_PI; a += 0.1) { let r = radius + p.map(p.noise(a * 1.5, noiseOffset), 0, 1, -instability, instability); p.vertex(r * p.cos(a), r * p.sin(a)); } p.endShape(p.CLOSE); if (nucleusColor) { p.fill(nucleusColor[0], nucleusColor[1], nucleusColor[2]); p.beginShape(); for (let a = 0; a < p.TWO_PI; a += 0.2) { let r = radius * 0.6 + p.map(p.noise(a, nucleusNoiseOffset), 0, 1, -instability * 0.5, instability * 0.5); p.vertex(r * p.cos(a), r * p.sin(a)); } p.endShape(p.CLOSE); } p.pop(); noiseOffset += 0.02; nucleusNoiseOffset += 0.01; }
 
-function drawCellHelper(p, radius, instability, bodyColor, nucleusColor) {
-    p.noStroke(); p.fill(bodyColor[0], bodyColor[1], bodyColor[2]); p.push(); p.translate(p.width / 2, p.height / 2);
-    p.beginShape();
-    for (let a = 0; a < p.TWO_PI; a += 0.1) { let r = radius + p.map(p.noise(a * 1.5, noiseOffset), 0, 1, -instability, instability); p.vertex(r * p.cos(a), r * p.sin(a)); }
-    p.endShape(p.CLOSE);
-    if (nucleusColor) {
-        p.fill(nucleusColor[0], nucleusColor[1], nucleusColor[2]); p.beginShape();
-        for (let a = 0; a < p.TWO_PI; a += 0.2) { let r = radius * 0.6 + p.map(p.noise(a, nucleusNoiseOffset), 0, 1, -instability * 0.5, instability * 0.5); p.vertex(r * p.cos(a), r * p.sin(a)); }
-        p.endShape(p.CLOSE);
-    }
-    p.pop(); noiseOffset += 0.02; nucleusNoiseOffset += 0.01; 
-}
-
+// --- 설문조사 페이지 p5 스케치 ---
 function initStep2Sketch() {
-    let particles = [], mergeRadius = 0;
-    let pos, vel, parentContainer;
-    const canvasSize = 200;
-
+    let particles = [];
+    let mergedCellPos, mergedCellVel;
     const sketch = p => {
+        let parentContainer;
         class Particle {
-            constructor() { this.displayPos = p.createVector(p.random(p.width), p.random(p.height)); this.merged = false; }
-            update(target) { let v = p5.Vector.sub(target, this.displayPos); if (v.mag() < 5) { this.merged = true; } v.setMag(p.max(v.mag() * 0.1, 3)); this.displayPos.add(v); }
-            display() { p.noStroke(); p.fill(30, 150); p.circle(this.displayPos.x, this.displayPos.y, 15); }
+            constructor() { this.pos = p.createVector(p.random(p.width), p.random(p.height)); this.vel = p5.Vector.random2D().mult(p.random(0.5, 1.2)); this.radius = 8; this.merged = false; }
+            update(bounds) { if (this.merged) return; this.pos.add(this.vel); if (this.pos.x < this.radius || this.pos.x > bounds.width - this.radius) { this.vel.x *= -1; this.pos.x = p.constrain(this.pos.x, this.radius, bounds.width - this.radius); } if (this.pos.y < this.radius || this.pos.y > bounds.height - this.radius) { this.vel.y *= -1; this.pos.y = p.constrain(this.pos.y, this.radius, bounds.height - this.radius); } }
+            moveTo(target) { let force = p5.Vector.sub(target, this.pos); if (force.mag() < 10) { this.merged = true; } force.setMag(p.max(force.mag() * 0.05, 2)); this.pos.add(force); }
+            display() { if(this.merged) return; p.noStroke(); p.fill(30); p.circle(this.pos.x, this.pos.y, this.radius * 2); }
         }
-        p.setup = () => {
-            parentContainer = document.getElementById('survey-viz-container');
-            let c = p.createCanvas(canvasSize, canvasSize).parent(parentContainer);
-            c.style('position', 'absolute');
-            pos = p.createVector(parentContainer.offsetWidth / 2 - p.width / 2, parentContainer.offsetHeight / 2 - p.height / 2);
-            vel = p5.Vector.random2D().mult(1.6);
-        };
+        p.setup = () => { parentContainer = document.getElementById('content-survey'); let c = p.createCanvas(parentContainer.offsetWidth, parentContainer.offsetHeight).parent(parentContainer); c.addClass('background-canvas'); mergedCellPos = p.createVector(p.width / 2, p.height / 2); mergedCellVel = p5.Vector.random2D().mult(1.5); };
+        
         p.draw = () => {
             p.clear();
             const center = p.createVector(p.width / 2, p.height / 2);
-            let currentInstability = 10, body = finalCellBodyColor, nucleus = null;
-            if (visualizationState === 0) {} 
-            else if (visualizationState === 1) {
-                if (particles.length === 0) { for(let i=0; i<15; i++) particles.push(new Particle()); }
-                particles.forEach(pt => pt.display()); 
-            } else {
-                particles.forEach(pt => { if (!pt.merged) { pt.update(center); pt.display(); } });
-                if (mergeRadius < p.width * 0.4) mergeRadius += 2;
-                if(visualizationState >= 3){ currentInstability = 10+(5-userAnswers['q3_self_assurance'])*3; nucleus = finalNucleusColor; }
-                if(visualizationState >= 4 && finalNucleusColor[0] === 128){ let h = (userAnswers['q4_relationship_stability']-1)*60; p.colorMode(p.HSB); finalNucleusColor = p.color(h, 60, 90).levels.slice(0,3); p.colorMode(p.RGB); }
-                if(visualizationState >= 5 && finalCellBodyColor[0] === 30){ p.colorMode(p.HSB); let h = p.hue(p.color(finalNucleusColor)); let s = 20+(userAnswers['q5_emotion_control']-1)*15; finalCellBodyColor = p.color(h, s, 100).levels.slice(0,3); p.colorMode(p.RGB); }
-                if(visualizationState >= 6) currentInstability = 5+(10-userAnswers['q5_emotion_control']*2)*1.5;
-                drawCellHelper(p, mergeRadius, currentInstability, body, nucleus);
+
+            if (visualizationState < 1) { return; } 
+
+            if (visualizationState === 1) {
+                if (particles.length < (visualizationState * 4) && particles.length < 15) { particles.push(new Particle()); }
+                particles.forEach(pt => { pt.update({width: p.width, height: p.height}); pt.display(); });
+            } 
+            else if (visualizationState === 2) {
+                particles.forEach(pt => { pt.moveTo(center); }); 
+                
+                let allMerged = particles.every(pt => pt.merged);
+                if (allMerged && particles.length > 0) {
+                    let radius = 60;
+                    let currentInstability = 10;
+                    let body = finalCellBodyColor; 
+                    let nucleus = null; 
+                    
+                    mergedCellPos.add(mergedCellVel); 
+                    if (mergedCellPos.x < radius || mergedCellPos.x > p.width - radius) { mergedCellVel.x *= -1; mergedCellPos.x = p.constrain(mergedCellPos.x, radius, p.width - radius); }
+                    if (mergedCellPos.y < radius || mergedCellPos.y > p.height - radius) { mergedCellVel.y *= -1; mergedCellPos.y = p.constrain(mergedCellPos.y, radius, p.height - radius); }
+                    
+                    drawCellHelper(p, mergedCellPos.x, mergedCellPos.y, radius, currentInstability, body, nucleus);
+                } else {
+                    particles.forEach(pt => pt.display()); 
+                }
             }
-            if (visualizationState >= 2) {
-                pos.add(vel);
-                if (pos.x <= 0 || pos.x + p.width >= parentContainer.offsetWidth) { vel.x *= -1; }
-                if (pos.y <= 0 || pos.y + p.height >= parentContainer.offsetHeight) { vel.y *= -1; }
-                pos.x = p.constrain(pos.x, 0, parentContainer.offsetWidth - p.width);
-                pos.y = p.constrain(pos.y, 0, parentContainer.offsetHeight - p.height);
-                p.canvas.style.left = `${pos.x}px`;
-                p.canvas.style.top = `${pos.y}px`;
-            } else { 
-                 p.canvas.style.left = `${parentContainer.offsetWidth / 2 - p.width / 2}px`;
-                 p.canvas.style.top = `${parentContainer.offsetHeight / 2 - p.height / 2}px`;
+            // [수정] visualizationState 검사 숫자 수정
+            else if (visualizationState >= 3) {
+                particles.forEach(pt => { pt.merged = true; }); 
+
+                let radius = 60;
+                mergedCellPos.add(mergedCellVel); 
+
+                if (mergedCellPos.x < radius || mergedCellPos.x > p.width - radius) { mergedCellVel.x *= -1; mergedCellPos.x = p.constrain(mergedCellPos.x, radius, p.width - radius); }
+                if (mergedCellPos.y < radius || mergedCellPos.y > p.height - radius) { mergedCellVel.y *= -1; mergedCellPos.y = p.constrain(mergedCellPos.y, radius, p.height - radius); }
+
+                let currentInstability = 10;
+                
+                // [수정] Q3(자기확신) 완료시 불안정성 반영 (state: 3)
+                if(visualizationState >= 3){ 
+                    currentInstability = 10+(5-userAnswers['q3_self_assurance'])*3; 
+                }
+                // [수정] Q4(관계안정) 완료시 핵 색상 반영 (state: 4)
+                if(visualizationState >= 4 && finalNucleusColor[0] === 128){ 
+                    let h = (userAnswers['q4_relationship_stability']-1)*60; 
+                    p.colorMode(p.HSB); 
+                    finalNucleusColor = p.color(h, 60, 90).levels.slice(0,3); 
+                    p.colorMode(p.RGB); 
+                }
+                // [수정] Q5(감정통제) 완료시 세포체 색상 반영 (state: 5)
+                if(visualizationState >= 5 && finalCellBodyColor[0] === 30){ 
+                    p.colorMode(p.HSB); 
+                    let h = p.hue(p.color(finalNucleusColor)); 
+                    let s = 20+(userAnswers['q5_emotion_control']-1)*15; 
+                    finalCellBodyColor = p.color(h, s, 100).levels.slice(0,3); 
+                    p.colorMode(p.RGB); 
+                }
+                
+                // Q3부터는 핵이 보임 (finalNucleusColor의 기본값은 [128, 128, 128] 회색)
+                drawCellHelper(p, mergedCellPos.x, mergedCellPos.y, radius, currentInstability, finalCellBodyColor, finalNucleusColor);
             }
         };
+        p.windowResized = () => { p.resizeCanvas(parentContainer.offsetWidth, parentContainer.offsetHeight); }
     };
     activeSketch = new p5(sketch);
 }
 
+// --- 민감도 설정 페이지 p5 스케치 ---
 function initStep3Sketch() {
-    let pos, vel, parentContainer;
-    const canvasSize = 200;
     const sketch = p => {
-        p.setup = () => {
-            parentContainer = document.getElementById('sensitivity-viz-container');
-            let c = p.createCanvas(canvasSize, canvasSize).parent(parentContainer);
-            c.style('position', 'absolute');
-            pos = p.createVector(parentContainer.offsetWidth / 2 - p.width / 2, parentContainer.offsetHeight / 2 - p.height / 2);
-            vel = p5.Vector.random2D().mult(1.6);
-        };
+        let parentContainer, pos, vel;
+        p.setup = () => { parentContainer = document.getElementById('content-sensitivity'); let c = p.createCanvas(parentContainer.offsetWidth, parentContainer.offsetHeight).parent(parentContainer); c.addClass('background-canvas'); pos = p.createVector(p.width / 2, p.height / 2); vel = p5.Vector.random2D().mult(1.6); };
         p.draw = () => {
             p.clear();
-            let currentInstability = 5 + (sensitivitySlider.value / 100) * 30;
-            drawCellHelper(p, p.width * 0.4, currentInstability, finalCellBodyColor, finalNucleusColor);
-            pos.add(vel);
-            if (pos.x <= 0 || pos.x + p.width >= parentContainer.offsetWidth) { vel.x *= -1; }
-            if (pos.y <= 0 || pos.y + p.height >= parentContainer.offsetHeight) { vel.y *= -1; }
-            pos.x = p.constrain(pos.x, 0, parentContainer.offsetWidth - p.width);
-            pos.y = p.constrain(pos.y, 0, parentContainer.offsetHeight - p.height);
-            p.canvas.style.left = `${pos.x}px`;
-            p.canvas.style.top = `${pos.y}px`;
+            let radius = 60; let currentInstability = 5 + (sensitivitySlider.value / 100) * 30; pos.add(vel);
+            if (pos.x < radius || pos.x > p.width - radius) { vel.x *= -1; pos.x = p.constrain(pos.x, radius, p.width - radius); }
+            if (pos.y < radius || pos.y > p.height - radius) { vel.y *= -1; pos.y = p.constrain(pos.y, radius, p.height - radius); }
+            drawCellHelper(p, pos.x, pos.y, radius, currentInstability, finalCellBodyColor, finalNucleusColor);
         };
+        p.windowResized = () => { p.resizeCanvas(parentContainer.offsetWidth, parentContainer.offsetHeight); }
     };
     activeSketch = new p5(sketch);
 }
 
+// --- 결과 페이지 p5 스케치 ---
 function initStep4Sketch() {
-    let pos, vel;
-    const canvasSize = 250;
-    let parentContainer;
     const sketch = p => {
+        let parentContainer, pos, vel;
         p.setup = () => {
             parentContainer = document.getElementById('result-page-container');
-            let c = p.createCanvas(canvasSize, canvasSize).parent(parentContainer);
-            c.style('position', 'absolute'); c.style('z-index', '1');
-            pos = p.createVector(p.random(parentContainer.offsetWidth - canvasSize), p.random(parentContainer.offsetHeight - canvasSize));
-            vel = p5.Vector.random2D().mult(3.0);
+            let c = p.createCanvas(250, 250).parent(parentContainer); c.id('p5-result-canvas'); 
+            c.style('position', 'absolute'); c.style('z-index', '-1');
+            pos = p.createVector(p.random(parentContainer.offsetWidth - p.width), p.random(parentContainer.offsetHeight - p.height));
+            vel = p5.Vector.random2D().mult(0.8);
         };
         p.draw = () => {
             p.clear();
-            drawCellHelper(p, p.width * 0.4, finalInstability, finalCellBodyColor, finalNucleusColor);
+            drawCellHelper(p, p.width / 2, p.height / 2, p.width * 0.4, finalInstability, finalCellBodyColor, finalNucleusColor);
             pos.add(vel);
-            if (pos.x <= 0 || pos.x + p.width >= parentContainer.offsetWidth) { vel.x *= -1; }
-            if (pos.y <= 0 || pos.y + p.height >= parentContainer.offsetHeight) { vel.y *= -1; }
-            pos.x = p.constrain(pos.x, 0, parentContainer.offsetWidth - p.width);
-            pos.y = p.constrain(pos.y, 0, parentContainer.offsetHeight - p.height);
+            const bounds = parentContainer.getBoundingClientRect();
+            if (pos.x <= 0 || pos.x + p.width >= bounds.width) { vel.x *= -1; }
+            if (pos.y <= 0 || pos.y + p.height >= bounds.height) { vel.y *= -1; }
+            pos.x = p.constrain(pos.x, 0, bounds.width - p.width);
+            pos.y = p.constrain(pos.y, 0, bounds.height - p.height);
             p.canvas.style.left = `${pos.x}px`;
             p.canvas.style.top = `${pos.y}px`;
         };
         p.windowResized = () => {
-             if (pos.x + p.width > parentContainer.offsetWidth) { pos.x = parentContainer.offsetWidth - p.width; }
-             if (pos.y + p.height > parentContainer.offsetHeight) { pos.y = parentContainer.offsetHeight - p.height; }
+             const bounds = parentContainer.getBoundingClientRect();
+             if (pos.x + p.width > bounds.width) { pos.x = bounds.width - p.width; }
+             if (pos.y + p.height > bounds.height) { pos.y = bounds.height - p.height; }
         }
     };
     activeSketch = new p5(sketch);
 }
 
+// --- 이벤트 리스너 ---
 document.addEventListener('DOMContentLoaded', () => {
-    rebindDOM();
+    accessButton = document.getElementById('access-button');
+    guestInput = document.getElementById('guest-id');
+    terminalOutput = document.getElementById('terminal-output');
+    accessButton.addEventListener('click', handleAccess);
+    guestInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleAccess());
+    panels.forEach(panel => {
+        panel.addEventListener('click', () => {
+            if (panel.id === 'panel-sensitivity' && visualizationState < totalQuestions) return;
+            if (panel.id === 'panel-result' && (!culturedCell || !userScores)) return;
+            if (panel.id !== activePanelId) activatePanel(panel);
+        });
+    });
 });
 </script>
 </body>
