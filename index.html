@@ -214,6 +214,14 @@
             font-size: 1.2rem; 
             font-weight: bold;
         }
+
+        /* [수정됨] 네비게이션 버튼(다음/결과보기) 폰트 스타일을 선택지 버튼과 통일 */
+#next-question, #prev-question {
+    font-family: 'OnulDamso', monospace; /* 폰트 변경 */
+    font-weight: 400; /* Regular 굵기 (Bold 아님) */
+    font-size: 1.05rem; /* 선택지 버튼과 동일한 크기 */
+}
+
         .nav-button:disabled { 
             opacity: 0.3; 
             cursor: not-allowed; 
@@ -225,7 +233,7 @@
         }
         .main-question { font-size: 2rem; margin-bottom: 10px; font-weight: bold; }
         .sub-text { opacity: 0.6; margin-bottom: 25px; font-size: 1.05rem; }
-        .choice-button { display: block; width: 100%; padding: 14px 20px; border: 1.5px solid var(--border-color); background: var(--page-bg); text-align: left; font-size: 1.05rem; margin-bottom: 10px; transition: 0.2s; border-radius: 4px; }
+        .choice-button { display: block; width: 100%; padding: 14px 20px; border: 1.5px solid #000000; background: transparent; color: var(--main-text--); text-align: left; font-size: 1.05rem; margin-bottom: 10px; transition: 0.2s; border-radius: 4px; }
         .choice-button:hover { background: var(--button-hover-bg); color: var(--button-hover-text); border-color: var(--button-hover-bg); }
         .choices.button-choices-scale { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 20px; }
         .choices.button-choices-scale .choice-button { width: 18%; padding: 12px 8px; text-align: center; font-size: 1.05rem; margin-bottom: 0; }
@@ -256,7 +264,7 @@
             justify-content: center;
         }
         #result-cell-info, #result-analysis-data { width: 100%; text-align: left; line-height: 1.7; font-size: 1.05rem; }
-        .result-info-heading { font-weight: bold; font-size: 1.2rem; color: var(--main-text); border-bottom: 1.5px solid var(--border-color); padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px; }
+        .result-info-heading { font-weight: bold; font-size: 1.05rem; color: var(--main-text); border-bottom: 1.5px solid var(--border-color); padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px; }
         #result-cell-info p, #result-analysis-data p { margin: 10px 0; font-size: 1.05rem; }
         #result-analysis-data p strong { color: var(--border-focus); min-width: 250px; display: inline-block; }
         .final-message { opacity: 0.7; font-size: 0.9rem; margin-top: 25px; text-align: center; }
@@ -291,12 +299,12 @@
               <defs>
                 <style>
        .st0 {
-  font-family: D2CodingBold, D2Coding;
+  font-family: 'OnulDamso', monospace;
   font-size: 35.61px;
 }
             
                   .st1 {
-                    stroke-width: 2.73px;
+                    stroke-width: 5px;
                   }
             
                   .st1, .st2, .st3, .st4 {
@@ -306,15 +314,15 @@
                   }
             
                   .st2 {
-                    stroke-width: 2.72px;
+                    stroke-width: 5px;
                   }
             
                   .st3 {
-                    stroke-width: 2.78px;
+                    stroke-width: 5px;
                   }
             
                   .st4 {
-                    stroke-width: 2.68px;
+                    stroke-width: 5px;
                   }
                 </style>
               </defs>
@@ -364,8 +372,10 @@ let resultChart = null;
 let activeSketch = null;
 let activePanelId = null;
 let currentQuestion = 1;
+
 let totalQuestions = 6;
 let visualizationState = 0;
+
 let finalNucleusColor = [128, 128, 128];
 let finalCellBodyColor = [30, 30, 30];
 let finalInstability = 15;
@@ -375,6 +385,9 @@ let userScores = {};
 let culturedCell = null;
 let currentEmotionImage = null; 
 let logoImageDataURLCache = null;
+let maxStepReached = 1; // [추가] 사용자가 도달한 최대 문항 번호 추적
+let isSurveyLocked = false; // [추가] 결과 보기 후 수정 잠금 플래그
+let transitionProgress = 0; // [추가] 0: 세포 100%, 1: 이미지 100%
 
 // --- START: 수정된 전역 변수 ---
 const CELL_DIAMETER = 160; // 세포 크기를 160으로 통일하여 키움
@@ -413,7 +426,7 @@ const EMOTION_DATABASE = [
       potential: "현재 상태에 안주하여 '무기력'이나 '지루함'으로 변질될 수 있습니다. 이 만족감을 기반으로 새로운 '기대'를 설정하는 것이 좋습니다.",
       related_cells: ['안도', '흐뭇함', '기쁨'] },
     { name: '자부심', eng_name: 'Pride', vitality: 7, empathy: 6, self_assurance: 10, relationship_stability: 7, emotion_control: 8, life_meaning: 9,
-      image_url: 'https://raw.githubusercontent.com/youngwookim11/eca-image-storage/9d6ee4d02c6eedfeffbf863904397a6bf429317b/%E1%84%8C%E1%85%A1%E1%84%87%E1%85%AE%E1%84%89%E1%85%B5%E1%86%B7_.png',
+      image_url: 'https://raw.githubusercontent.com/youngwookim11/eca-image-storage/985946f8241ef09cf3e5c090a52f4d7c2dccc8f5/%E1%84%8C%E1%85%B5-%E1%84%8C%E1%85%A1%E1%84%87%E1%85%AE%E1%84%89%E1%85%B5%E1%86%B7.png',
       commentary: "스스로에 대한 긍지는 당신을 더 단단하게 만들어 줄 겁니다.",
       definition: "스스로의 성취, 능력, 또는 가치에 대해 긍정적으로 평가하는 감정입니다.",
       manifestation: "자신의 선택과 행동에 대한 강한 확신으로 나타납니다. 타인의 평가에 쉽게 흔들리지 않는 내면의 단단함을 느낍니다.",
@@ -434,7 +447,7 @@ const EMOTION_DATABASE = [
       potential: "목표 지향적인 행동을 촉진합니다. 기대가 충족되면 '기쁨'이나 '희열'로, 좌절되면 '실망'이나 '서운'함으로 발전할 수 있습니다.",
       related_cells: ['들뜸', '조급', '희열'] },
     { name: '흐뭇함', eng_name: 'Contentment', vitality: 6, empathy: 8, self_assurance: 7, relationship_stability: 9, emotion_control: 8, life_meaning: 8,
-      image_url: 'https://raw.githubusercontent.com/youngwookim11/eca-image-storage/9d6ee4d02c6eedfeffbf863904397a6bf429317b/%E1%84%92%E1%85%B3%E1%84%86%E1%85%AE%E1%86%BA.png',
+      image_url: 'https://raw.githubusercontent.com/youngwookim11/eca-image-storage/985946f8241ef09cf3e5c090a52f4d7c2dccc8f5/%E1%84%8C%E1%85%B5-%E1%84%92%E1%85%B3%E1%84%86%E1%85%AE%E1%86%BA.png',
       commentary: "타인을 보며 느끼는 따뜻한 흐뭇함은 당신의 마음이 건강하다는 증거입니다.",
       definition: "마음에 흡족하여 기분이 좋은 상태로, 주로 타인이나 관계 속에서 느껴집니다.",
       manifestation: "타인의 긍정적인 모습을 보거나, '애정'을 느낄 때 잔잔한 미소와 함께 나타납니다. '자부심'보다 부드럽고 '공감'과 맞닿아 있습니다.",
@@ -476,7 +489,7 @@ const EMOTION_DATABASE = [
       potential: "감정을 충분히 느끼고 해소하는 과정이 필요합니다. 억압되면 '무기력'이나 '공허'로 발전할 수 있습니다. '공감'을 통해 타인과 유대감을 형성할 수도 있습니다.",
       related_cells: ['외로움', '자책', '공감'] },
     { name: '허무', eng_name: 'Nihility', vitality: 2, empathy: 4, self_assurance: 3, relationship_stability: 3, emotion_control: 2, life_meaning: 1,
-      image_url: 'https://raw.githubusercontent.com/youngwookim11/eca-image-storage/9d6ee4d02c6eedfeffbf863904397a6bf429317b/%E1%84%92%E1%85%A5%E1%84%86%E1%85%AE.png',
+      image_url: 'https://raw.githubusercontent.com/youngwookim11/eca-image-storage/985946f8241ef09cf3e5c090a52f4d7c2dccc8f5/%E1%84%8C%E1%85%B5-%E1%84%92%E1%85%A5%E1%84%86%E1%85%AE.png',
       commentary: "모든 것이 무의미하게 느껴질 땐, 아주 작은 의미부터 다시 찾아보는 노력이 필요합니다.",
       definition: "모든 것이 무의미하고 헛되게 느껴지는 감정입니다.",
       manifestation: "극도로 낮은 '삶의 의미감'과 '활력'이 특징입니다. 어떤 일에도 동기를 느끼지 못하며, '냉소'적인 태도를 보일 수 있습니다.",
@@ -504,7 +517,7 @@ const EMOTION_DATABASE = [
       potential: "'공감' 능력을 바탕으로 새로운 관계를 맺거나, 기존 관계를 개선하려는 노력이 필요합니다. 방치되면 '공허'나 '무기력'으로 이어질 수 있습니다.",
       related_cells: ['슬픔', '공허', '위축'] },
     { name: '억울', eng_name: 'Unfairness', vitality: 5, empathy: 4, self_assurance: 3, relationship_stability: 2, emotion_control: 2, life_meaning: 3,
-      image_url: 'https://raw.githubusercontent.com/youngwookim11/eca-image-storage/9d6ee4d02c6eedfeffbf863904397a6bf429317b/%E1%84%8B%E1%85%A5%E1%86%A8%E1%84%8B%E1%85%AE%E1%86%AF.PNG',
+      image_url: 'https://raw.githubusercontent.com/youngwookim11/eca-image-storage/0064a5c0335ac7ead04ec8429d13c61d47ead0aa/%E1%84%8C%E1%85%B5%E1%84%8B%E1%85%A5%E1%86%A8%E1%84%8B%E1%85%AE%E1%86%AF1.png',
       commentary: "억울한 마음을 너무 오래 담아두지 마세요. 당신의 에너지는 더 좋은 곳에 쓰여야 합니다.",
       definition: "부당한 대우를 받거나 오해를 받아 마음이 답답하고 분한 감정입니다.",
       manifestation: "낮은 '자기 확신'과 '관계 안정' 속에서 '분개' 직전의 에너지를 가집니다. 자신의 무고함을 증명하고 싶어 합니다.",
@@ -532,7 +545,7 @@ const EMOTION_DATABASE = [
       potential: "'자부심'을 훼손하며, '냉소'나 '외로움'을 유발합니다. 자신의 가치를 스스로 인정하는 '자기 확신' 회복이 중요합니다.",
       related_cells: ['위축', '냉소', '분개'] },
     { name: '답답', eng_name: 'Frustration', vitality: 4, empathy: 5, self_assurance: 4, relationship_stability: 4, emotion_control: 3, life_meaning: 3,
-      image_url: 'https://raw.githubusercontent.com/youngwookim11/eca-image-storage/9d6ee4d02c6eedfeffbf863904397a6bf429317b/%E1%84%83%E1%85%A1%E1%86%B8%E1%84%83%E1%85%A1%E1%86%B8.png',
+      image_url: 'https://raw.githubusercontent.com/youngwookim11/eca-image-storage/985946f8241ef09cf3e5c090a52f4d7c2dccc8f5/%E1%84%8C%E1%85%B5-%E1%84%83%E1%85%A1%E1%86%B8%E1%84%83%E1%85%A1%E1%86%B82.png',
       commentary: "답답한 마음이 들 땐, 잠시 멈춰서 엉킨 실타래를 하나씩 풀어보는 시간이 필요합니다.",
       definition: "일이 뜻대로 되지 않거나, 마음이 풀리지 않아 갑갑한 상태입니다.",
       manifestation: "중간 정도의 부정적 감정들이 복합적으로 작용합니다. '조급'함과 '긴장'의 전조 증상일 수 있습니다.",
@@ -595,7 +608,7 @@ const EMOTION_DATABASE = [
       potential: "'배신'이나 '무시'당한 경험이 누적되어 방어기제로 작용할 수 있습니다. '공감' 능력을 회복하고 '삶의 의미'를 재설정할 필요가 있습니다.",
       related_cells: ['불신', '무시', '허무'] },
     { name: '긴장', eng_name: 'Tension', vitality: 7, empathy: 5, self_assurance: 5, relationship_stability: 4, emotion_control: 3, life_meaning: 4,
-      image_url: 'https://raw.githubusercontent.com/youngwookim11/eca-image-storage/9d6ee4d02c6eedfeffbf863904397a6bf429317b/%E1%84%80%E1%85%B5%E1%86%AB%E1%84%8C%E1%85%A1%E1%86%BC%20.png',
+      image_url: 'https://raw.githubusercontent.com/youngwookim11/eca-image-storage/985946f8241ef09cf3e5c090a52f4d7c2dccc8f5/%E1%84%8C%E1%85%B5-%E1%84%80%E1%85%B5%E1%86%AB%E1%84%8C%E1%85%A1%E1%86%BC.png',
       commentary: "적당한 긴장은 더 좋은 결과를 위한 준비운동과 같습니다.",
       definition: "중요한 일이나 불확실한 상황을 앞두고 마음을 놓지 못하는 상태입니다.",
       manifestation: "높은 '활력'(각성)과 낮은 '감정 통제'가 특징입니다. '조급'함과 유사하나, '삶의 의미감'(중요도)이 더 높게 작용합니다.",
@@ -714,7 +727,9 @@ function typeEffect(element, text, delay, callback) {
 
 function handleAccess() {
     const guestID = guestInput.value;
-    if (guestID && /^[a-zA-Z]+$/.test(guestID)) {
+    
+    // [수정됨] 정규표현식을 /^[a-zA-Z0-9]+$/ 로 변경하여 영문과 숫자를 모두 허용
+    if (guestID && /^[a-zA-Z0-9]+$/.test(guestID)) {
         userAnswers['accessID'] = guestID.toUpperCase();
         accessButton.disabled = true;
         typeEffect(terminalOutput, "ACCESSING E.C.A. ARCHIVE...", 50, () => {
@@ -730,7 +745,8 @@ function handleAccess() {
             }, 800);
         });
     } else {
-        typeEffect(terminalOutput, "ERROR: ACCESS ID는 영문으로만 입력해야 합니다.", 50, null);
+        // [수정됨] 에러 메시지도 조건에 맞게 변경
+        typeEffect(terminalOutput, "ERROR: ACCESS ID는 영문과 숫자만 입력 가능합니다.", 50, null);
     }
 }
 
@@ -766,41 +782,161 @@ function showQuestion(qNum) {
 }
 
 function goToPrevQuestion() { if (currentQuestion > 1) { currentQuestion--; showQuestion(currentQuestion); } }
-function goToNextQuestion() { if (currentQuestion < totalQuestions) { currentQuestion++; showQuestion(currentQuestion); } }
+// [수정됨] '다음' 버튼 핸들러 (잠금 로직 적용)
+function goToNextQuestion() {
+    if (currentQuestion < totalQuestions) {
+        currentQuestion++;
+        showQuestion(currentQuestion);
+    } else {
+        // 마지막 단계에서 '결과 보기' 클릭 시
+        const answeredCount = Object.keys(userAnswers).filter(k => k.startsWith('q')).length;
+        
+        if (answeredCount >= totalQuestions) {
+            // [핵심] 설문 잠금 설정
+            isSurveyLocked = true;
+            
+            calculateAndShowFinalResult();
+            // 결과 보기 클릭 시, 이미지는 이미 로드되어 있으므로 패널만 전환
+            activatePanel(document.getElementById('panel-sensitivity'));
+        } else {
+            alert("모든 문항에 답변해 주세요.");
+        }
+    }
+}
 
-// --- nextStep 함수 (수정됨) ---
+
+
+// [수정됨] 답변 선택 시 처리 (비선택 항목 투명 처리)
 function nextStep(questionName, value) {
-    userAnswers[questionName] = parseInt(value);
-    visualizationState = Object.keys(userAnswers).filter(k => k.startsWith('q')).length;
+    if (isSurveyLocked) return;
 
+    userAnswers[questionName] = parseInt(value);
+
+    // 버튼 스타일 업데이트
     const buttons = document.querySelectorAll(`[data-question="${questionName}"]`);
     buttons.forEach(btn => {
-        btn.style.backgroundColor = (btn.dataset.value == value) ? 'var(--border-focus)' : 'var(--page-bg)';
-        btn.style.color = (btn.dataset.value == value) ? 'var(--page-bg)' : 'var(--main-text)';
+        const isSelected = (btn.dataset.value == value);
+        // [수정] 선택되면 검은색(focus), 아니면 투명(transparent)
+        btn.style.backgroundColor = isSelected ? 'var(--border-focus)' : 'transparent';
+        btn.style.color = isSelected ? 'var(--page-bg)' : 'var(--main-text)';
     });
 
-    if (progressBar) progressBar.style.width = (visualizationState / totalQuestions) * 100 + '%';
+    const qNum = parseInt(questionName.replace('q', '').split('_')[0]);
+    
+    // 항목 클릭 시 시각 효과 즉시 변경
+    if (qNum === totalQuestions) {
+        if (visualizationState !== 6) transitionProgress = 0; 
+    }
+    visualizationState = qNum;
 
-    if (currentQuestion < totalQuestions) {
-        setTimeout(() => {
-            currentQuestion++;
-            showQuestion(currentQuestion);
-        }, 200);
-    } else if (visualizationState === totalQuestions) {
+    if (qNum >= maxStepReached && qNum < totalQuestions) {
+        maxStepReached = qNum + 1;
+    } else if (qNum === totalQuestions) {
+        maxStepReached = totalQuestions + 1;
+    }
+
+    if (qNum === totalQuestions) {
         calculateAndShowFinalResult();
-        
-        if (culturedCell && culturedCell.image_url) {
-            new p5(p => {
-                p.preload = () => { currentEmotionImage = p.loadImage(culturedCell.image_url); };
-                p.setup = () => {
-                    // [문제 해결] 즉시 전환으로 딜레이 느낌 제거
-                    activatePanel(document.getElementById('panel-sensitivity'));
-                    p.remove();
-                };
-            }, document.createElement('div'));
-        } else {
+        if (culturedCell && culturedCell.image_url && activeSketch) {
+            activeSketch.loadImage(culturedCell.image_url, (img) => {
+                currentEmotionImage = img;
+            });
+        }
+    }
+
+    updateNavButtons(qNum);
+    
+    const answeredCount = Object.keys(userAnswers).filter(k => k.startsWith('q')).length;
+    if (progressBar) progressBar.style.width = (answeredCount / totalQuestions) * 100 + '%';
+}
+
+// [수정됨] 문항 이동 처리 (비선택 항목 투명 처리)
+function showQuestion(qNum) {
+    document.querySelectorAll('.question-step').forEach(q => q.style.display = 'none');
+    const qEl = document.getElementById('q' + qNum);
+    if (qEl) qEl.style.display = 'block';
+
+    if (isSurveyLocked) {
+        visualizationState = 6;
+        transitionProgress = 1; 
+        if (!currentEmotionImage) {
+             calculateAndShowFinalResult();
+             if (culturedCell && culturedCell.image_url && activeSketch) {
+                activeSketch.loadImage(culturedCell.image_url, (img) => {
+                    currentEmotionImage = img;
+                });
+            }
+        }
+    } else {
+        if (qNum === totalQuestions) {
+            visualizationState = 5;
             currentEmotionImage = null;
-            activatePanel(document.getElementById('panel-sensitivity'));
+            transitionProgress = 0;
+        } else {
+            const isCurrentAnswered = Object.keys(userAnswers).some(k => k.startsWith(`q${qNum}_`));
+            if (isCurrentAnswered) {
+                visualizationState = qNum;
+            } else {
+                visualizationState = qNum - 1;
+            }
+            currentEmotionImage = null;
+            transitionProgress = 0;
+        }
+    }
+
+    if (progressText) progressText.textContent = `[ ${qNum} / ${totalQuestions} ]`;
+
+    // 버튼 스타일 복구 시에도 투명 배경 적용
+    const currentQKey = qEl.querySelector('.choice-button').dataset.question;
+    const buttons = qEl.querySelectorAll(`[data-question="${currentQKey}"]`);
+    
+    buttons.forEach(btn => {
+        // 잠금 상태 처리
+        btn.disabled = isSurveyLocked;
+        btn.style.cursor = isSurveyLocked ? 'not-allowed' : 'pointer';
+        btn.style.opacity = isSurveyLocked ? '0.7' : '1';
+
+        // 색상 처리 (선택 여부에 따라 투명/검정)
+        if (userAnswers[currentQKey] && btn.dataset.value == userAnswers[currentQKey]) {
+            btn.style.backgroundColor = 'var(--border-focus)';
+            btn.style.color = 'var(--page-bg)';
+        } else {
+            // [수정] 기본 배경은 투명
+            btn.style.backgroundColor = 'transparent';
+            btn.style.color = 'var(--main-text)';
+        }
+    });
+
+    updateNavButtons(qNum);
+}
+
+
+
+
+// 네비게이션 버튼 상태 업데이트 헬퍼 함수
+function updateNavButtons(qNum) {
+    const prevBtn = document.getElementById('prev-question');
+    const nextBtn = document.getElementById('next-question');
+    const qEl = document.getElementById('q' + qNum);
+    
+    if (prevBtn) prevBtn.disabled = (qNum <= 1);
+
+    if (nextBtn) {
+        const currentQKey = qEl.querySelector('.choice-button').dataset.question;
+        const isAnswered = userAnswers.hasOwnProperty(currentQKey);
+
+        if (qNum === totalQuestions) {
+             nextBtn.textContent = isAnswered ? "[ 다음 ]" : "[ 완료 ]";
+        } else {
+             nextBtn.textContent = ">";
+        }
+
+        // 다음 버튼 활성화 조건: 이미 지난 단계 or 답변 완료
+        // 단, 잠금 상태라면 무조건 다음으로 갈 수 있음 (결과 확인용)
+        if (maxStepReached > qNum || isAnswered || isSurveyLocked) {
+            nextBtn.disabled = false;
+        } else {
+            nextBtn.disabled = true;
         }
     }
 }
@@ -876,8 +1012,174 @@ function showResult(cell, scores) {
 let receiptEscPosDataCache = null;
 function bytesToHexString(bytes) { return Array.from(bytes, byte => ('0' + (byte & 0xFF).toString(16)).slice(-2)).join(''); }
 function convertCanvasToEscPos(canvas, maxWidth = 384) { const scale = maxWidth / canvas.width; const newWidth = maxWidth; const newHeight = Math.floor(canvas.height * scale); const tempCanvas = document.createElement('canvas'); tempCanvas.width = newWidth; tempCanvas.height = newHeight; const ctx = tempCanvas.getContext('2d'); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, newWidth, newHeight); ctx.drawImage(canvas, 0, 0, newWidth, newHeight); const imageData = ctx.getImageData(0, 0, newWidth, newHeight); const pixels = imageData.data; const contrast = 150; const factor = (259 * (contrast + 255)) / (255 * (259 - contrast)); for (let i = 0; i < pixels.length; i += 4) { pixels[i] = factor * (pixels[i] - 128) + 128; pixels[i+1] = factor * (pixels[i+1] - 128) + 128; pixels[i+2] = factor * (pixels[i+2] - 128) + 128; } ctx.putImageData(imageData, 0, 0); const ditheredData = ctx.getImageData(0, 0, newWidth, newHeight); const monoData = new Uint8Array(newWidth * newHeight); const grayData = []; for (let i = 0; i < ditheredData.data.length; i += 4) { const gray = (ditheredData.data[i] * 0.299 + ditheredData.data[i + 1] * 0.587 + ditheredData.data[i + 2] * 0.114); grayData.push(gray); } for (let y = 0; y < newHeight; y++) { for (let x = 0; x < newWidth; x++) { const index = y * newWidth + x; const newPixel = grayData[index] < 128 ? 0 : 255; monoData[index] = newPixel / 255; const quantError = grayData[index] - newPixel; if (x + 1 < newWidth) grayData[index + 1] += quantError * 7 / 16; if (y + 1 < newHeight) { if (x > 0) grayData[index - 1 + newWidth] += quantError * 3 / 16; grayData[index + newWidth] += quantError * 5 / 16; if (x + 1 < newWidth) grayData[index + 1 + newWidth] += quantError * 1 / 16; } } } const bytes = []; const command = [0x1d, 0x76, 0x30, 0x00]; const xL = (newWidth / 8) & 0xFF; const xH = 0x00; const yL = newHeight & 0xFF; const yH = (newHeight >> 8) & 0xFF; bytes.push(...command, xL, xH, yL, yH); for (let i = 0; i < newHeight; i++) { for (let j = 0; j < newWidth / 8; j++) { let byte = 0; for (let k = 0; k < 8; k++) { if (monoData[i * newWidth + (j * 8 + k)] === 0) { byte |= (1 << (7 - k)); } } bytes.push(byte); } } return new Uint8Array(bytes); }
-async function handlePrint() { const printButton = document.getElementById('print-button'); if (!window.qz) { alert("필수 라이브러리를 찾을 수 없습니다."); return; } printButton.disabled = true; printButton.textContent = '[ 프린터 연결 중... ]'; try { await qz.websocket.connect(); let escposData; if (receiptEscPosDataCache) { console.log("캐시된 프린터 데이터를 사용합니다."); escposData = receiptEscPosDataCache; } else { console.log("새로운 프린터 데이터를 생성합니다. 웹 폰트 로딩을 기다립니다..."); printButton.textContent = '[ 영수증 이미지 생성 중... ]'; await document.fonts.ready; console.log("웹 폰트 로딩 완료."); if (!resultChart || !resultChart.ctx) throw new Error("결과 차트가 올바르게 생성되지 않았습니다."); const chartImageData = resultChart.toBase64Image('image/png'); const p5Canvas = document.getElementById('p5-result-canvas'); if (!p5Canvas) throw new Error("세포 이미지가 올바르게 생성되지 않았습니다."); const p5ImageData = p5Canvas.toDataURL('image/png'); if (!logoImageDataURLCache) { const svgElement = document.getElementById('main-logo'); const svgString = new XMLSerializer().serializeToString(svgElement); const svgBlob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'}); const url = URL.createObjectURL(svgBlob); const image = new Image(); image.src = url; logoImageDataURLCache = await new Promise((resolve, reject) => { image.onload = () => { const c = document.createElement('canvas'); c.width = image.width; c.height = image.height; c.getContext('2d').drawImage(image, 0, 0); URL.revokeObjectURL(url); resolve(c.toDataURL('image/png')); }; image.onerror = (e) => { URL.revokeObjectURL(url); reject(e); }; }); } const cellIndex = EMOTION_DATABASE.indexOf(culturedCell); const cellCode = `E-${(cellIndex + 1).toString().padStart(3, '0')}`; const cellNames = `${culturedCell.eng_name.toUpperCase()} (${culturedCell.name})`; let cellType = 'TYPE A'; if (['희열', '무기력', '기대'].includes(culturedCell.name)) cellType = 'TYPE B'; else if (['조급', '공감', '배신', '답답'].includes(culturedCell.name)) cellType = 'TYPE C'; else if (['냉소', '만족', '자책', '기쁨', '위축', '허무', '자부심', '흐뭇함'].includes(culturedCell.name)) cellType = 'TYPE D'; const displayOrder = [ { key: 'vitality', num: '1', name: '활력' }, { key: 'life_meaning', num: '2', name: '삶의 의미' }, { key: 'emotion_control', num: '3', name: '감정 통제' }, { key: 'relationship_stability', num: '4', name: '관계 안정' }, { key: 'self_assurance', num: '5', name: '자기 확신' }, { key: 'empathy', num: '6', name: '공감' } ]; let receiptAnalysisHTML = ''; displayOrder.forEach(item => { receiptAnalysisHTML += `<div style="display: flex; align-items: baseline; line-height: 1.6; font-size: 14px;"><span style="display: flex; align-items: center; white-space: nowrap;"><span style="font-weight: 900; display: inline-flex; justify-content: center; align-items: center; width: 14px; height: 14px; background-color: #000; color: #fff; border-radius: 50%; font-size: 10px; margin-right: 5px; line-height: 1; position: relative; top: -1px;">${item.num}</span>${item.name}</span><span style="flex-grow: 1; border-bottom: 1px dotted #000; margin: 0 5px;"></span><span style="font-weight: 400;">${userScores[item.key].toFixed(1)}</span></div>`; }); const printContainer = document.createElement('div'); printContainer.style.position = "absolute"; printContainer.style.left = "-2000px"; printContainer.style.background = "#FFF"; printContainer.style.width = "384px"; printContainer.style.fontFamily = "'OnulDamso', 'D2Coding', monospace"; printContainer.style.fontWeight = "400"; printContainer.style.color = "#000"; printContainer.style.padding = "30px 15px 20px 15px"; printContainer.style.boxSizing = "border-box"; printContainer.innerHTML = ` <style> @font-face { font-family: 'OnulDamso'; font-weight: 400; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302-01@1.0/OnulDamso-Regular.woff2') format('woff2'); } @font-face { font-family: 'OnulDamso'; font-weight: 900; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302-01@1.0/OnulDamso-Heavy.woff2') format('woff2'); } </style> <div style="text-align: center; margin-bottom: 25px;"> <img src="${logoImageDataURLCache}" style="width: 180px;" /> </div> <div style="font-size: 15px; margin-bottom: 10px; font-weight: 400;">[ ID: ${userAnswers.accessID} ]</div> <div style="border: 1px solid #000; padding: 10px; margin-bottom: 8px; width: 100%; aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center;"> <img src="${p5ImageData}" style="max-width: 90%; max-height: 90%;" /> </div> <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 400; margin-bottom: 15px;"> <span>${cellCode}</span> <span style="letter-spacing: 0.5px;">${cellNames}</span> <span>${cellType}</span> </div> <div style="font-family: 'OnulDamso', monospace; font-weight: 900; font-size: 16px; letter-spacing: 0.5px; margin: 15px 0 8px 0; padding: 5px 0; border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: center;">RESULT SHEET</div> <div style="width: 100%; text-align: center; margin: 20px 0;"> <img src="${chartImageData}" style="width: 100%; height: auto;" /> </div> <div style="font-family: 'OnulDamso', monospace; font-weight: 900; font-size: 13px; white-space: nowrap; padding: 5px 0; border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: center;">[ 분석 데이터 (10 MAX) ]</div> <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 5px;"> ${receiptAnalysisHTML} </div> <div style="margin-top: 15px;"> <div style="font-family: 'OnulDamso', monospace; font-weight: 900; font-size: 15px; margin-bottom: 5px; padding: 5px 0; border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: center;">정의 [ Definition ]</div> <div style="font-size: 14px; line-height: 1.4; font-weight: 400;">${culturedCell.definition}</div> </div> <div style="margin-top: 15px;"> <div style="font-family: 'OnulDamso', monospace; font-weight: 900; font-size: 15px; margin-bottom: 5px; padding: 5px 0; border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: center;">발현 형태 [ Manifestation ]</div> <div style="font-size: 14px; line-height: 1.4; font-weight: 400;">${culturedCell.manifestation}</div> </div> <div style="margin-top: 15px;"> <div style="font-family: 'OnulDamso', monospace; font-weight: 900; font-size: 15px; margin-bottom: 5px; padding: 5px 0; border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: center;">잠재적 발전 [ Potential ]</div> <div style="font-size: 14px; line-height: 1.4; font-weight: 400;">${culturedCell.potential}</div> </div> <div style="margin-top: 15px;"> <div style="font-family: 'OnulDamso', monospace; font-weight: 900; font-size: 15px; margin-bottom: 5px; padding: 5px 0; border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: center;">관련 세포 [ Related cells ]</div> <div style="font-size: 14px; line-height: 1.4; font-weight: 400;">${culturedCell.related_cells.join(', ')}</div> </div> <div style="border-top: 1px solid #000; margin: 20px 0;"></div> <div style="text-align: center; font-size: 15px; margin-bottom: 10px;"> ${culturedCell.commentary} </div> <div style="text-align: center; font-size: 12px; font-weight: 900; opacity: 0.8;"> Copyright © 2025 E.C.A. Records </div> `; document.body.appendChild(printContainer); const canvas = await html2canvas(printContainer, { scale: 3, useCORS: true }); document.body.removeChild(printContainer); const convertedData = convertCanvasToEscPos(canvas); receiptEscPosDataCache = convertedData; escposData = convertedData; } const printerName = await qz.printers.getDefault(); const config = qz.configs.create(printerName); const command = [ '\x1B\x40', { type: 'raw', format: 'hex', data: bytesToHexString(escposData) }, '\x1B\x64\x05', '\x1D\x56\x41\x00' ]; printButton.textContent = '[ 프린터로 전송 중... ]'; await qz.print(config, command); alert(`'${printerName}' 프린터로 영수증을 전송했습니다.`); printButton.textContent = '[ 전송 완료 ]'; } catch (err) { console.error("인쇄 중 오류:", err); alert("인쇄 중 오류가 발생했습니다: " + err.message); receiptEscPosDataCache = null; } finally { if (qz.websocket.isActive()) { await qz.websocket.disconnect(); } setTimeout(() => { printButton.disabled = false; printButton.textContent = '[ 영수증 출력하기 ]'; }, 1500); } }
+async function handlePrint() {
+    const printButton = document.getElementById('print-button');
+    if (!window.qz) {
+        alert("필수 라이브러리를 찾을 수 없습니다.");
+        return;
+    }
 
+    printButton.disabled = true;
+    printButton.textContent = '[ 프린터 연결 중... ]';
+
+    try {
+        await qz.websocket.connect();
+        
+        let escposData;
+
+        // 캐시 기능을 다시 활성화하여 두 번째 인쇄부터는 빠르게 실행되도록 합니다.
+        if (receiptEscPosDataCache) {
+            console.log("캐시된 프린터 데이터를 사용합니다.");
+            escposData = receiptEscPosDataCache;
+        } else {
+            console.log("새로운 프린터 데이터를 생성합니다. 웹 폰트 로딩을 기다립니다...");
+            printButton.textContent = '[ 영수증 이미지 생성 중... ]';
+
+            await document.fonts.ready;
+            
+            // 폰트가 렌더링될 최소한의 시간을 보장합니다.
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            const p5Canvas = document.getElementById('p5-result-canvas');
+            if (!p5Canvas) throw new Error("세포 이미지가 올바르게 생성되지 않았습니다.");
+            const p5ImageData = p5Canvas.toDataURL('image/png');
+            
+            if (!resultChart || !resultChart.ctx) throw new Error("결과 차트가 올바르게 생성되지 않았습니다.");
+            const chartImageData = resultChart.toBase64Image('image/png');
+
+            if (!logoImageDataURLCache) {
+                const svgElement = document.getElementById('main-logo');
+                const svgString = new XMLSerializer().serializeToString(svgElement);
+                const svgBlob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
+                const url = URL.createObjectURL(svgBlob);
+                const image = new Image();
+                image.src = url;
+                logoImageDataURLCache = await new Promise((resolve, reject) => {
+                    image.onload = () => {
+                        const c = document.createElement('canvas');
+                        c.width = image.width; c.height = image.height;
+                        c.getContext('2d').drawImage(image, 0, 0);
+                        URL.revokeObjectURL(url);
+                        resolve(c.toDataURL('image/png'));
+                    };
+                    image.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+                });
+            }
+            
+            const cellIndex = EMOTION_DATABASE.indexOf(culturedCell);
+            const cellCode = `E-${(cellIndex + 1).toString().padStart(3, '0')}`;
+            const cellNames = `${culturedCell.eng_name.toUpperCase()} (${culturedCell.name})`;
+            let cellType = 'TYPE A';
+            if (['희열', '무기력', '기대'].includes(culturedCell.name)) cellType = 'TYPE B';
+            else if (['조급', '공감', '배신', '답답'].includes(culturedCell.name)) cellType = 'TYPE C';
+            else if (['냉소', '만족', '자책', '기쁨', '위축', '허무', '자부심', '흐뭇함'].includes(culturedCell.name)) cellType = 'TYPE D';
+            const displayOrder = [
+                { key: 'vitality', num: '1', name: '활력' }, { key: 'life_meaning', num: '2', name: '삶의 의미' },
+                { key: 'emotion_control', num: '3', name: '감정 통제' }, { key: 'relationship_stability', num: '4', name: '관계 안정' },
+                { key: 'self_assurance', num: '5', name: '자기 확신' }, { key: 'empathy', num: '6', name: '공감' }
+            ];
+            let receiptAnalysisHTML = '';
+            displayOrder.forEach(item => {
+                receiptAnalysisHTML += `<div style="display: flex; align-items: baseline; line-height: 1.6; font-size: 14px;"><span style="display: flex; align-items: center; white-space: nowrap;"><span style="font-weight: 900; display: inline-flex; justify-content: center; align-items: center; width: 14px; height: 14px; background-color: #000; color: #fff; border-radius: 50%; font-size: 10px; margin-right: 5px; line-height: 1; position: relative; top: -1px;">${item.num}</span>${item.name}</span><span style="flex-grow: 1; border-bottom: 1px dotted #000; margin: 0 5px;"></span><span style="font-weight: 400;">${userScores[item.key].toFixed(1)}</span></div>`;
+            });
+            const printContainer = document.createElement('div');
+            printContainer.style.position = "absolute"; printContainer.style.left = "-2000px"; printContainer.style.background = "#FFF";
+            printContainer.style.width = "384px"; printContainer.style.fontFamily = "'OnulDamso', 'D2Coding', monospace";
+            printContainer.style.fontWeight = "400"; printContainer.style.color = "#000";
+            printContainer.style.padding = "30px 15px 20px 15px"; printContainer.style.boxSizing = "border-box";
+            printContainer.innerHTML = `
+                <style> @font-face { font-family: 'OnulDamso'; font-weight: 400; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302-01@1.0/OnulDamso-Regular.woff2') format('woff2'); } @font-face { font-family: 'OnulDamso'; font-weight: 900; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302-01@1.0/OnulDamso-Heavy.woff2') format('woff2'); } </style>
+                <div style="text-align: center; margin-bottom: 25px;"> <img src="${logoImageDataURLCache}" style="width: 180px;" /> </div>
+                <div style="font-size: 15px; margin-bottom: 10px; font-weight: 400;">[ ID: ${userAnswers.accessID} ]</div>
+                <div style="border: 1px solid #000; padding: 10px; margin-bottom: 8px; width: 100%; aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center;"> <img src="${p5ImageData}" style="max-width: 90%; max-height: 90%;" /> </div>
+                
+                <!-- [최종 수정] 전체 div에서 font-weight를 빼고, 가운데 span에만 font-weight: 900을 추가합니다. -->
+                <div style="display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 15px;"> <span>${cellCode}</span> <span style="letter-spacing: 0.5px; font-weight: 900;">${cellNames}</span> <span>${cellType}</span> </div>
+                
+                <div style="font-family: 'OnulDamso', monospace; font-weight: 400; font-size: 15px; letter-spacing: 0.5px; margin: 15px 0 8px 0; padding: 5px 0; border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: center;">RESULT SHEET</div>
+                <div style="width: 100%; text-align: center; margin: 20px 0;"> <img src="${chartImageData}" style="width: 100%; height: auto;" /> </div>
+                <div style="font-family: 'OnulDamso', monospace; font-weight: 400; font-size: 15px; white-space: nowrap; padding: 5px 0; margin-top: 15px; border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: center;">[ 분석 데이터 (10 MAX) ]</div>
+                <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 5px;"> ${receiptAnalysisHTML} </div>
+                <div style="margin-top: 15px;"> <div style="font-family: 'OnulDamso', monospace; font-weight: 400; font-size: 15px; margin-bottom: 5px; padding: 5px 0; border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: center;">정의 [ Definition ]</div> <div style="font-size: 14px; line-height: 1.4; font-weight: 400;">${culturedCell.definition}</div> </div>
+                <div style="margin-top: 15px;"> <div style="font-family: 'OnulDamso', monospace; font-weight: 400; font-size: 15px; margin-bottom: 5px; padding: 5px 0; border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: center;">발현 형태 [ Manifestation ]</div> <div style="font-size: 14px; line-height: 1.4; font-weight: 400;">${culturedCell.manifestation}</div> </div>
+                <div style="margin-top: 15px;"> <div style="font-family: 'OnulDamso', monospace; font-weight: 400; font-size: 15px; margin-bottom: 5px; padding: 5px 0; border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: center;">잠재적 발전 [ Potential ]</div> <div style="font-size: 14px; line-height: 1.4; font-weight: 400;">${culturedCell.potential}</div> </div>
+                <div style="margin-top: 15px;"> <div style="font-family: 'OnulDamso', monospace; font-weight: 400; font-size: 15px; margin-bottom: 5px; padding: 5px 0; border-top: 1px solid #000; border-bottom: 1px solid #000; text-align: center;">관련 세포 [ Related cells ]</div> <div style="font-size: 14px; line-height: 1.4; font-weight: 400;">${culturedCell.related_cells.join(', ')}</div> </div>
+                <div style="border-top: 1px solid #000; margin: 20px 0;"></div>
+                <div style="text-align: center; font-size: 15px; margin-bottom: 10px;"> ${culturedCell.commentary} </div>
+                <div style="text-align: center; font-size: 12px; font-weight: 900; opacity: 0.8;"> Copyright © 2025 E.C.A. Records </div>
+            `;
+            document.body.appendChild(printContainer);
+            const canvas = await html2canvas(printContainer, { scale: 3, useCORS: true });
+            document.body.removeChild(printContainer);
+            
+            const convertedData = convertCanvasToEscPos(canvas);
+            
+            receiptEscPosDataCache = convertedData;
+            escposData = convertedData;
+        }
+
+        // --- 수정 시작: 안전 패딩(Buffer Padding)을 포함한 통합 전송 ---
+        
+        const printerName = await qz.printers.getDefault();
+        const config = qz.configs.create(printerName);
+
+        // 1. 바이너리 데이터 준비
+        // 초기화 명령 (ESC @)
+        const initCmd = new Uint8Array([0x1B, 0x40]);
+        
+        // [핵심 해결책] 안전 패딩 (Safety Padding)
+        // 초기화 직후 프린터가 안정화될 때까지 의미 없는 0x00(Null) 데이터를 흘려보냅니다.
+        // 앞부분 데이터가 씹히더라도 이 0x00 구간에서 소모되므로, 뒤따라오는 이미지는 안전합니다.
+        const paddingSize = 100; 
+        const safetyPadding = new Uint8Array(paddingSize).fill(0x00);
+
+        // 종료 명령: 여백 5줄 + 커팅 (ESC d 5 + GS V A 0)
+        const endCmd = new Uint8Array([0x1B, 0x64, 0x05, 0x1D, 0x56, 0x41, 0x00]); 
+
+        // 2. [초기화 + 안전패딩 + 이미지 + 커팅]을 하나의 배열로 병합
+        const combinedData = new Uint8Array(initCmd.length + safetyPadding.length + escposData.length + endCmd.length);
+        
+        let offset = 0;
+        combinedData.set(initCmd, offset); offset += initCmd.length;
+        combinedData.set(safetyPadding, offset); offset += safetyPadding.length; // 패딩 삽입
+        combinedData.set(escposData, offset); offset += escposData.length;
+        combinedData.set(endCmd, offset);
+
+        // 3. Hex 문자열 변환
+        const fullHexString = bytesToHexString(combinedData);
+
+        // 4. 500ms의 강제 대기 (페이지 로드 직후 소켓 안정화 시간 확보)
+        if (printButton.textContent !== '[ 전송 완료 ]') {
+             await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        // 5. 전송
+        const finalCommand = [
+            { type: 'raw', format: 'hex', data: fullHexString }
+        ];
+
+        printButton.textContent = '[ 프린터로 전송 중... ]';
+        await qz.print(config, finalCommand);
+        
+        // --- 수정 끝 ---
+        
+        alert(`'${printerName}' 프린터로 영수증을 전송했습니다.`);
+        printButton.textContent = '[ 전송 완료 ]';
+
+    } catch (err) {
+        console.error("인쇄 중 오류:", err);
+        alert("인쇄 중 오류가 발생했습니다: " + err.message);
+        receiptEscPosDataCache = null;
+    } finally {
+        if (qz.websocket.isActive()) {
+            await qz.websocket.disconnect();
+        }
+        setTimeout(() => {
+             printButton.disabled = false;
+             printButton.textContent = '[ 영수증 출력하기 ]';
+        }, 1500);
+    }
+}
 function activatePanel(panel) {
     if (activeSketch) {
         activeSketch.remove();
@@ -937,7 +1239,7 @@ function drawDistortedImage(p, pg, img, instability, targetDiameter) {
     pg.clear();
     
     // 화질 개선 (step: 2)
-    const step = 2;
+    const step = 1.5;
     // 버퍼의 중앙에 targetDiameter 크기의 이미지를 그리기 위한 여백 계산
     const padding = (pg.width - targetDiameter) / 2;
 
@@ -966,109 +1268,172 @@ function drawDistortedImage(p, pg, img, instability, targetDiameter) {
 
 // --- p5.js 스케치 인스턴스 ---
 
-// --- 설문 스케치 (최종 수정) ---
+// [수정됨] P5.js 스케치 (교차 애니메이션 구현)
 function initStep2Sketch() {
     let particles = [];
     let mergedCellPos, mergedCellVel;
     const sketch = p => {
         let parentContainer, offscreenBuffer;
-
         let nucleusColorOffset = Math.random() * 100;
         let bodyColorOffset = Math.random() * 200;
 
-        class Particle { constructor() { this.pos = p.createVector(p.random(p.width), p.random(p.height)); this.vel = p5.Vector.random2D().mult(p.random(0.5, 1.2)); this.radius = 8; this.merged = false; } update(bounds) { if (this.merged) return; this.pos.add(this.vel); if (this.pos.x < this.radius || this.pos.x > bounds.width - this.radius) { this.vel.x *= -1; this.pos.x = p.constrain(this.pos.x, this.radius, bounds.width - this.radius); } if (this.pos.y < this.radius || this.pos.y > bounds.height - this.radius) { this.vel.y *= -1; this.pos.y = p.constrain(this.pos.y, this.radius, bounds.height - this.radius); } } moveTo(target) { let force = p5.Vector.sub(target, this.pos); if (force.mag() < 10) { this.merged = true; } force.setMag(p.max(force.mag() * 0.05, 2)); this.pos.add(force); } display() { if (this.merged) return; p.noStroke(); p.fill(30); p.circle(this.pos.x, this.pos.y, this.radius * 2); } }
+        class Particle { 
+            constructor() { 
+                this.pos = p.createVector(p.random(p.width), p.random(p.height)); 
+                this.vel = p5.Vector.random2D().mult(p.random(0.5, 1.2)); 
+                this.radius = 8; 
+                this.merged = false; 
+            } 
+            update(bounds) { 
+                if (this.merged) return; 
+                this.pos.add(this.vel); 
+                if (this.pos.x < this.radius || this.pos.x > bounds.width - this.radius) { 
+                    this.vel.x *= -1; 
+                    this.pos.x = p.constrain(this.pos.x, this.radius, bounds.width - this.radius); 
+                } 
+                if (this.pos.y < this.radius || this.pos.y > bounds.height - this.radius) { 
+                    this.vel.y *= -1; 
+                    this.pos.y = p.constrain(this.pos.y, this.radius, bounds.height - this.radius); 
+                } 
+            } 
+            moveTo(target) { 
+                let force = p5.Vector.sub(target, this.pos); 
+                if (force.mag() < 10) { this.merged = true; } 
+                force.setMag(p.max(force.mag() * 0.05, 2)); 
+                this.pos.add(force); 
+            } 
+            display() { 
+                if (this.merged) return; 
+                p.noStroke(); 
+                p.fill(30); 
+                p.circle(this.pos.x, this.pos.y, this.radius * 2); 
+            } 
+        }
         
         p.setup = () => { 
             parentContainer = document.getElementById('content-survey'); 
-            // [수정] WEBGL 모드 제거, 2D 기본 모드로 복귀
             let c = p.createCanvas(parentContainer.offsetWidth, parentContainer.offsetHeight).parent(parentContainer); 
             c.addClass('background-canvas'); 
             
-            // [수정] WEBGL 좌표계가 아닌 2D 좌표계로 위치 초기화
             mergedCellPos = lastCellPos ? lastCellPos.copy() : p.createVector(p.width / 2, p.height / 2);
             mergedCellVel = lastCellVel ? lastCellVel.copy() : p5.Vector.random2D().mult(1.5);
             
             const bufferPadding = 250;
             const bufferSize = CELL_DIAMETER + bufferPadding;
-            // [수정] WEBGL 모드 제거
             offscreenBuffer = p.createGraphics(bufferSize, bufferSize);
             offscreenBuffer.noStroke();
         };
 
         p.draw = () => {
-            // [수정] 2D 모드에서는 clear() 사용
             p.clear();
+            if (visualizationState === 0) return;
 
-            // [최종 수정] 설문 완료 후 돌아온 경우를 먼저, 그리고 정확하게 처리
-            if (culturedCell && currentEmotionImage) {
-                const radius = CELL_DIAMETER / 2;
-                mergedCellPos.add(mergedCellVel);
-                // [최종 수정] 경계선 충돌 로직을 2D 좌표계에 맞게 복구 및 강화
-                if (mergedCellPos.x < radius || mergedCellPos.x > p.width - radius) { 
-                    mergedCellPos.x = p.constrain(mergedCellPos.x, radius, p.width - radius);
-                    mergedCellVel.x *= -1; 
-                }
-                if (mergedCellPos.y < radius || mergedCellPos.y > p.height - radius) { 
-                    mergedCellPos.y = p.constrain(mergedCellPos.y, radius, p.height - radius);
-                    mergedCellVel.y *= -1; 
-                }
-                lastCellPos = mergedCellPos.copy();
-                lastCellVel = mergedCellVel.copy();
-
-                // 2D 렌더링 방식인 drawDistortedImage를 사용
-                drawDistortedImage(p, offscreenBuffer, currentEmotionImage, 10, CELL_DIAMETER);
-                p.imageMode(p.CENTER);
-                p.image(offscreenBuffer, mergedCellPos.x, mergedCellPos.y);
+            // 공통: 위치 업데이트
+            const radius = CELL_DIAMETER / 2;
+            mergedCellPos.add(mergedCellVel);
+            if (mergedCellPos.x < radius || mergedCellPos.x > p.width - radius) { 
+                mergedCellPos.x = p.constrain(mergedCellPos.x, radius, p.width - radius);
+                mergedCellVel.x *= -1; 
             }
-            // 아직 설문이 진행 중인 경우
-            else {
-                if (visualizationState >= 3) {
-                    particles.forEach(pt => { pt.merged = true; });
+            if (mergedCellPos.y < radius || mergedCellPos.y > p.height - radius) { 
+                mergedCellPos.y = p.constrain(mergedCellPos.y, radius, p.height - radius);
+                mergedCellVel.y *= -1; 
+            }
+            lastCellPos = mergedCellPos.copy();
+            lastCellVel = mergedCellVel.copy();
 
-                    const radius = CELL_DIAMETER / 2;
-                    mergedCellPos.add(mergedCellVel);
-                    // [최종 수정] 경계선 충돌 로직을 2D 좌표계에 맞게 복구 및 강화
-                    if (mergedCellPos.x < radius || mergedCellPos.x > p.width - radius) { 
-                        mergedCellPos.x = p.constrain(mergedCellPos.x, radius, p.width - radius);
-                        mergedCellVel.x *= -1; 
-                    }
-                    if (mergedCellPos.y < radius || mergedCellPos.y > p.height - radius) { 
-                        mergedCellPos.y = p.constrain(mergedCellPos.y, radius, p.height - radius);
-                        mergedCellVel.y *= -1; 
-                    }
-                    lastCellPos = mergedCellPos.copy();
-                    lastCellVel = mergedCellVel.copy();
+            // --- 애니메이션 로직 적용 ---
+            
+            // 잠금 상태거나 6단계 진입 시
+            if (isSurveyLocked || visualizationState === 6) {
+                
+                // 애니메이션 진행도 증가 (속도 조절: 0.05)
+                if (transitionProgress < 1) {
+                    transitionProgress += 0.05;
+                    if (transitionProgress > 1) transitionProgress = 1;
+                }
 
-                    let currentInstability = 10 + (5 - (userAnswers['q3_self_assurance'] || 3)) * 3;
-                    let animatedBodyColor = finalCellBodyColor;
-                    let animatedNucleusColor = finalNucleusColor;
-
-                    if (visualizationState >= 4) {
-                        p.colorMode(p.HSB);
-                        let hue = p.map(p.noise(bodyColorOffset), 0, 1, 0, 360);
-                        animatedBodyColor = p.color(hue, 70, 90).levels.slice(0, 3);
-                        bodyColorOffset += 0.01;
-                        p.colorMode(p.RGB);
-                    }
-
-                    if (visualizationState >= 5) {
-                        p.colorMode(p.HSB);
-                        let hue = p.map(p.noise(nucleusColorOffset), 0, 1, 0, 360);
-                        animatedNucleusColor = p.color(hue, 80, 100).levels.slice(0, 3);
-                        nucleusColorOffset += 0.015;
-                        p.colorMode(p.RGB);
-                    }
+                // 1. 세포 그리기 (점점 작아짐)
+                if (transitionProgress < 1) {
+                    // 1.0 -> 0.0 으로 스케일 줄어듦
+                    let cellScale = 1 - transitionProgress;
+                    // 세포가 작아질 때 투명도도 같이 줄어들면 더 자연스러움 (선택사항)
+                    // 여기선 크기만 줄임
+                    p.push();
+                    p.translate(mergedCellPos.x, mergedCellPos.y);
+                    p.scale(cellScale); 
+                    p.translate(-mergedCellPos.x, -mergedCellPos.y);
                     
-                    drawCellHelper(p, mergedCellPos.x, mergedCellPos.y, radius, currentInstability, animatedBodyColor, animatedNucleusColor);
+                    // 세포 그리기 내부 함수 호출 (위치는 그대로, 스케일만 변형)
+                    drawCellBody(p, mergedCellPos, radius);
+                    p.pop();
                 }
-                else { 
-                    const center = p.createVector(p.width / 2, p.height / 2);
-                    if (visualizationState < 1) return;
-                    if (visualizationState === 1) { if (particles.length < 15) { particles.push(new Particle()); } particles.forEach(pt => { pt.update({ width: p.width, height: p.height }); pt.display(); }); } 
-                    else if (visualizationState === 2) { particles.forEach(pt => pt.moveTo(center)); let allMerged = particles.every(pt => pt.merged); if (allMerged && particles.length > 0) { const radius = 60; mergedCellPos.add(mergedCellVel); if (mergedCellPos.x < radius || mergedCellPos.x > p.width - radius) { mergedCellVel.x *= -1; } if (mergedCellPos.y < radius || mergedCellPos.y > p.height - radius) { mergedCellVel.y *= -1; } drawCellHelper(p, mergedCellPos.x, mergedCellPos.y, radius, 10, finalCellBodyColor, null); } else { particles.forEach(pt => pt.display()); } }
+
+                // 2. 이미지 그리기 (점점 커짐)
+                if (currentEmotionImage) {
+                    // 0.0 -> 1.0 으로 스케일 커짐
+                    // 시작을 약간 작게(0.5)에서 시작할지, 0에서 시작할지 결정 (여기선 0부터)
+                    let imgScale = transitionProgress;
+                    
+                    p.push();
+                    p.translate(mergedCellPos.x, mergedCellPos.y);
+                    p.scale(imgScale);
+                    // 이미지를 0,0 중심으로 그리기 위해 버퍼 사용
+                    drawDistortedImage(p, offscreenBuffer, currentEmotionImage, 10, CELL_DIAMETER);
+                    p.imageMode(p.CENTER);
+                    p.image(offscreenBuffer, 0, 0); // translate 했으므로 0,0
+                    p.pop();
+                } else {
+                    // 이미지가 아직 로딩 안됐으면 세포가 사라지지 않고 유지되도록
+                     if (transitionProgress >= 1) drawCellBody(p, mergedCellPos, radius);
                 }
+                return;
+            }
+
+            // 5단계 이하에서는 일반 로직 수행 (애니메이션 없음)
+            if (visualizationState >= 3) {
+                particles.forEach(pt => { pt.merged = true; });
+                drawCellBody(p, mergedCellPos, radius);
+            }
+            else if (visualizationState === 2) {
+                particles.forEach(pt => pt.moveTo(p.createVector(p.width/2, p.height/2)));
+                let allMerged = particles.every(pt => pt.merged);
+                if (allMerged && particles.length > 0) {
+                    drawCellHelper(p, mergedCellPos.x, mergedCellPos.y, 60, 10, finalCellBodyColor, null);
+                } else {
+                    particles.forEach(pt => pt.display());
+                }
+            }
+            else if (visualizationState === 1) {
+                if (particles.length < 15) { particles.push(new Particle()); }
+                particles.forEach(pt => { pt.update({ width: p.width, height: p.height }); pt.display(); });
             }
         };
+
+        function drawCellBody(p, pos, radius) {
+            let currentInstability = 10 + (5 - (userAnswers['q3_self_assurance'] || 3)) * 3;
+            let animatedBodyColor = finalCellBodyColor;
+            let animatedNucleusColor = finalNucleusColor;
+
+            if (visualizationState >= 4) {
+                p.colorMode(p.HSB);
+                let hue = p.map(p.noise(bodyColorOffset), 0, 1, 0, 360);
+                animatedBodyColor = p.color(hue, 70, 90).levels.slice(0, 3);
+                bodyColorOffset += 0.01;
+                p.colorMode(p.RGB);
+            }
+
+            if (visualizationState >= 5) {
+                p.colorMode(p.HSB);
+                let hue = p.map(p.noise(nucleusColorOffset), 0, 1, 0, 360);
+                animatedNucleusColor = p.color(hue, 80, 100).levels.slice(0, 3);
+                nucleusColorOffset += 0.015;
+                p.colorMode(p.RGB);
+            }
+            
+            drawCellHelper(p, pos.x, pos.y, radius, currentInstability, animatedBodyColor, animatedNucleusColor);
+        }
+
         p.windowResized = () => p.resizeCanvas(parentContainer.offsetWidth, parentContainer.offsetHeight);
     };
     activeSketch = new p5(sketch);
@@ -1180,7 +1545,7 @@ function initStep4Sketch() {
     activeSketch = new p5(sketch);
 }
 
-// --- 전역 이벤트 리스너 (기존과 동일) ---
+// --- 전역 이벤트 리스너 (수정됨: 설문 완료 전 탭 이동 차단) ---
 document.addEventListener('DOMContentLoaded', () => {
     accessButton = document.getElementById('access-button');
     guestInput = document.getElementById('guest-id');
@@ -1190,8 +1555,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     panels.forEach(panel => {
         panel.addEventListener('click', () => {
-            if (panel.id === 'panel-sensitivity' && visualizationState < totalQuestions) return;
+            // [핵심 수정] 설문이 완료(잠금)되지 않았다면 탭 이동 불가능
+            if (!isSurveyLocked) {
+                // 필요하다면 여기에 alert("설문을 먼저 완료해주세요."); 등을 넣을 수 있습니다.
+                return; 
+            }
+
+            // 설문이 완료된 이후에는 결과 탭 접근 제어 로직 유지
+            // (주입이 완료되어 결과가 나와야만 결과 탭 접근 가능)
             if (panel.id === 'panel-result' && (!culturedCell || !userScores)) return;
+            
+            // 탭 이동 실행
             if (panel.id !== activePanelId) activatePanel(panel);
         });
     });
